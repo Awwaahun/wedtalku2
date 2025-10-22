@@ -1,0 +1,4 @@
+@font-face {
+      font-family: 'font-logo';
+      src: local('font-logo'), url('./assets/fonts/Nexa-Heavy.ttf') format('truetype');
+    }
