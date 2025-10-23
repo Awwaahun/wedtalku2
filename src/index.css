@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  font-family: 'font-base', sans-serif, Trebuchet MS;
+  line-height: 1.5;
+  font-weight: bold;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .span-hero1 {
+    font-family: 'font-span';
+    text-align: center;
+  }
+  .span-hero2 {
+    font-family: 'font-span';
+    text-align: center;
+  }
+}
+
 .font-logo{
   font-family: 'font-logo', Sans-Serif;
 }
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'font-logo', serif;
+  }

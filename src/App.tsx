@@ -4,22 +4,56 @@ import Hero from './components/Hero';
 import CategoryFilter from './components/CategoryFilter';
 import TemplateGrid from './components/TemplateGrid';
 import TemplateModal from './components/TemplateModal';
+import TemplateDetail from './components/TemplateDetail';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
 import { WeddingTemplate } from './lib/supabase';
 import { Sparkles } from 'lucide-react';
 
+type ViewMode = 'home' | 'detail';
+
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState<WeddingTemplate | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
 
+  const handleViewDetails = (template: WeddingTemplate) => {
+    setSelectedTemplate(template);
+    setViewMode('detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedTemplate(null);
+    setViewMode('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handlePurchase = (template: WeddingTemplate) => {
     alert(`Pembelian template "${template.title}" akan segera diproses. Fitur pembayaran akan segera hadir!`);
+    setViewMode('home');
     setSelectedTemplate(null);
   };
 
+  // Tampilkan halaman detail jika ada template yang dipilih
+  if (viewMode === 'detail' && selectedTemplate) {
+    return (
+      <>
+        <TemplateDetail
+          template={selectedTemplate}
+          onClose={handleCloseDetail}
+          onPurchase={handlePurchase}
+        />
+        {showAuthModal && (
+          <AuthModal onClose={() => setShowAuthModal(false)} />
+        )}
+      </>
+    );
+  }
+
+  // Tampilkan halaman home
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-[#fff4bd]/10 to-[#85d2d0]/10">
       <Navbar
@@ -29,7 +63,7 @@ function App() {
 
       <Hero />
 
-      <section id="featured" className="py-16 px-4 sm:px-6 lg:px-8">
+      <section id="featured" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#f4b9b8]/20 to-[#887bb0]/20 mb-4">
@@ -45,13 +79,13 @@ function App() {
           </div>
 
           <TemplateGrid
-            onViewDetails={setSelectedTemplate}
+            onViewDetails={handleViewDetails}
             showFeaturedOnly={true}
           />
         </div>
       </section>
 
-      <section id="templates" className="py-16 px-4 sm:px-6 lg:px-8">
+      <section id="templates" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-800 mb-4">
@@ -68,7 +102,7 @@ function App() {
           />
 
           <TemplateGrid
-            onViewDetails={setSelectedTemplate}
+            onViewDetails={handleViewDetails}
             filterCategory={selectedCategory}
           />
         </div>
@@ -113,14 +147,6 @@ function App() {
       </section>
 
       <Footer />
-
-      {selectedTemplate && (
-        <TemplateModal
-          template={selectedTemplate}
-          onClose={() => setSelectedTemplate(null)}
-          onPurchase={handlePurchase}
-        />
-      )}
 
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />

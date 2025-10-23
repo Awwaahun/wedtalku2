@@ -8,19 +8,14 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <Heart className="w-8 h-8 text-[#f4b9b8]" fill="#f4b9b8" />
-              <span className="text-xl font-bold bg-gradient-to-r from-[#f4b9b8] via-[#887bb0] to-[#85d2d0] bg-clip-text text-transparent">
-                Wedding Market
+              <span className="font-logo text-xl font-bold bg-gradient-to-r from-[#f4b9b8] via-[#887bb0] to-[#85d2d0] bg-clip-text text-transparent">
+                WedTalku
               </span>
             </div>
             <p className="text-gray-600 mb-4">
               Platform terpercaya untuk membeli template website pernikahan digital yang elegan dan modern.
               Wujudkan website impian untuk hari spesial Anda.
             </p>
-            <div className="flex space-x-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0]"></div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#887bb0] to-[#85d2d0]"></div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#85d2d0] to-[#fff4bd]"></div>
-            </div>
           </div>
 
           <div>
@@ -54,7 +49,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start space-x-2">
                 <Mail className="w-5 h-5 text-[#887bb0] flex-shrink-0 mt-0.5" />
-                <span className="text-gray-600 text-sm">support@weddingmarket.id</span>
+                <span className="text-gray-600 text-sm">support@wedtalku.id</span>
               </li>
               <li className="flex items-start space-x-2">
                 <Phone className="w-5 h-5 text-[#887bb0] flex-shrink-0 mt-0.5" />
