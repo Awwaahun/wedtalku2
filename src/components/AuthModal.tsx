@@ -21,6 +21,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
     try {
       if (isLogin) {
+        // LOGIN
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -29,36 +30,59 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         if (error) throw error;
 
         setMessage({ type: 'success', text: 'Login berhasil!' });
-        setTimeout(() => onClose(), 1000);
+        setTimeout(() => {
+          onClose();
+          window.location.reload(); // Reload untuk update UI
+        }, 1000);
       } else {
+        // SIGN UP - Metode 1: Dengan Trigger Database (Recommended)
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName, // Akan digunakan oleh trigger
+            }
+          }
         });
 
         if (signUpError) throw signUpError;
 
-        if (authData.user) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: email,
-              full_name: fullName,
-              role: 'customer',
-            });
+        // Tunggu sebentar untuk trigger database selesai
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-          if (profileError) throw profileError;
-        }
-
-        setMessage({ type: 'success', text: 'Registrasi berhasil! Silakan login.' });
+        setMessage({ 
+          type: 'success', 
+          text: 'Registrasi berhasil! Silakan cek email untuk verifikasi.' 
+        });
+        
         setTimeout(() => {
           setIsLogin(true);
           setMessage(null);
+          setEmail('');
+          setPassword('');
+          setFullName('');
         }, 2000);
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Terjadi kesalahan' });
+      console.error('Auth error:', error);
+      
+      // Handle specific error messages
+      let errorMessage = 'Terjadi kesalahan';
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Email atau password salah';
+      } else if (error.message?.includes('User already registered')) {
+        errorMessage = 'Email sudah terdaftar';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Silakan verifikasi email Anda terlebih dahulu';
+      } else if (error.message?.includes('row-level security')) {
+        errorMessage = 'Gagal membuat profil. Silakan hubungi admin.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -149,6 +173,11 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                   minLength={6}
                 />
               </div>
+              {!isLogin && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimal 6 karakter
+                </p>
+              )}
             </div>
 
             <button
@@ -172,6 +201,9 @@ export default function AuthModal({ onClose }: AuthModalProps) {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setMessage(null);
+                setEmail('');
+                setPassword('');
+                setFullName('');
               }}
               className="text-[#887bb0] hover:text-[#f4b9b8] transition-colors font-medium"
             >
@@ -180,6 +212,15 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                 : 'Sudah punya akun? Login di sini'}
             </button>
           </div>
+
+          {/* Info untuk development */}
+          {!isLogin && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                💡 <strong>Info:</strong> Setelah registrasi, cek email untuk verifikasi akun (jika email confirmation diaktifkan di Supabase).
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

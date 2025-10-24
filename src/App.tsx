@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CategoryFilter from './components/CategoryFilter';
 import TemplateGrid from './components/TemplateGrid';
-import TemplateModal from './components/TemplateModal';
 import TemplateDetail from './components/TemplateDetail';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
+import AdminPanel from './components/AdminPanel';
 import { WeddingTemplate } from './lib/supabase';
+import { supabase } from './lib/supabase';
 import { Sparkles } from 'lucide-react';
 
-type ViewMode = 'home' | 'detail';
+type ViewMode = 'home' | 'detail' | 'admin';
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -18,6 +19,54 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    checkAdminStatus();
+    
+    // Check URL for admin route
+    const path = window.location.pathname;
+    if (path === '/admin') {
+      checkAdminAccess();
+    }
+  }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      setIsAdmin(profile?.role === 'admin');
+    }
+  };
+
+  const checkAdminAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setShowAuthModal(true);
+      window.history.pushState({}, '', '/');
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role === 'admin') {
+      setViewMode('admin');
+      setIsAdmin(true);
+    } else {
+      alert('Anda tidak memiliki akses ke halaman admin');
+      window.history.pushState({}, '', '/');
+    }
+  };
 
   const handleViewDetails = (template: WeddingTemplate) => {
     setSelectedTemplate(template);
@@ -36,6 +85,11 @@ function App() {
     setViewMode('home');
     setSelectedTemplate(null);
   };
+
+  // Tampilkan admin panel
+  if (viewMode === 'admin') {
+    return <AdminPanel />;
+  }
 
   // Tampilkan halaman detail jika ada template yang dipilih
   if (viewMode === 'detail' && selectedTemplate) {
@@ -151,6 +205,20 @@ function App() {
 
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
+      )}
+
+      {/* Admin Access Button - Only visible for admin users */}
+      {isAdmin && (
+        <button
+          onClick={() => {
+            setViewMode('admin');
+            window.history.pushState({}, '', '/admin');
+          }}
+          className="fixed bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-2xl hover:shadow-purple-500/50 hover:scale-110 transition-all z-40"
+          title="Admin Panel"
+        >
+          <Sparkles className="w-6 h-6" />
+        </button>
       )}
     </div>
   );
