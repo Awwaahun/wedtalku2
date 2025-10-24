@@ -81,6 +81,7 @@ function App() {
           <TemplateGrid
             onViewDetails={handleViewDetails}
             showFeaturedOnly={true}
+            featuredLayout={true}
           />
         </div>
       </section>

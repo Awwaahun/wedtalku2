@@ -201,19 +201,10 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <a
-                href={template.demo_url || 'https://website-undangan01.vercel.app/'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 py-3 sm:px-6 sm:py-4 rounded-xl border-2 border-purple-500 text-purple-600 font-semibold hover:bg-purple-50 transition-all group text-sm sm:text-base"
-              >
-                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-                <span>Demo</span>
-              </a>
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               <button className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 py-3 sm:px-6 sm:py-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100 text-purple-700 font-semibold hover:from-purple-200 hover:to-cyan-200 transition-all text-sm sm:text-base">
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>PDF</span>
+                <span>Download PDF</span>
               </button>
             </div>
           </div>
