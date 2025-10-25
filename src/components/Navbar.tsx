@@ -112,22 +112,27 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
               {/* User Section */}
               {user ? (
                 <div className="flex items-center space-x-2 animate-[slideIn_0.3s_ease-out]">
-                  <div className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#887bb0]/20 border border-[#887bb0]/20 hover:border-[#887bb0]/40 transition-all duration-300">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-sm font-semibold text-gray-700">
-                      {user.email?.split('@')[0]}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="p-2.5 rounded-full bg-red-50 hover:bg-red-100 transition-all duration-300 hover:scale-110 group"
-                    title="Keluar"
-                  >
-                    <LogOut className="w-5 h-5 text-red-600 group-hover:rotate-12 transition-transform" />
-                  </button>
-                </div>
+    <button
+      onClick={() => {
+        window.location.href = '/user-panel';
+      }}
+      className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#887bb0]/20 border border-[#887bb0]/20 hover:border-[#887bb0]/40 transition-all duration-300"
+    >
+      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
+        <User className="w-4 h-4 text-white" />
+      </div>
+      <span className="text-sm font-semibold text-gray-700">
+        {user.email?.split('@')[0]}
+      </span>
+    </button>
+    <button
+      onClick={handleSignOut}
+      className="p-2.5 rounded-full bg-red-50 hover:bg-red-100 transition-all duration-300 hover:scale-110 group"
+      title="Keluar"
+    >
+      <LogOut className="w-5 h-5 text-red-600 group-hover:rotate-12 transition-transform" />
+    </button>
+  </div>
               ) : (
                 <button
                   onClick={onAuthClick}

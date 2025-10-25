@@ -29,6 +29,7 @@ export interface Profile {
   role: 'admin' | 'customer';
   created_at: string;
   updated_at: string;
+  storage_limit: number;
 }
 
 export interface Purchase {
@@ -39,4 +40,15 @@ export interface Purchase {
   purchase_date: string;
   access_url: string;
   status: 'completed' | 'pending';
+}
+
+export interface UserMedia {
+  id: string;
+  user_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: 'image' | 'video' | 'music';
+  file_size: number;
+  mime_type: string;
+  created_at: string;
 }

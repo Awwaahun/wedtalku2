@@ -7,11 +7,12 @@ import TemplateDetail from './components/TemplateDetail';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
+import UserPanel from './components/UserPanel';
 import { WeddingTemplate } from './lib/supabase';
 import { supabase } from './lib/supabase';
 import { Sparkles } from 'lucide-react';
 
-type ViewMode = 'home' | 'detail' | 'admin';
+type ViewMode = 'home' | 'detail' | 'admin' | 'user-panel';
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -20,16 +21,24 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     checkAdminStatus();
-    
-    // Check URL for admin route
-    const path = window.location.pathname;
-    if (path === '/admin') {
-      checkAdminAccess();
-    }
+    checkUserSession();
+    checkRouting();
   }, []);
+
+  const checkUserSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setUser(session?.user ?? null);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  };
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -41,6 +50,16 @@ function App() {
         .single();
       
       setIsAdmin(profile?.role === 'admin');
+    }
+  };
+
+  const checkRouting = async () => {
+    const path = window.location.pathname;
+    
+    if (path === '/admin') {
+      await checkAdminAccess();
+    } else if (path === '/user-panel') {
+      await checkUserPanelAccess();
     }
   };
 
@@ -68,6 +87,18 @@ function App() {
     }
   };
 
+  const checkUserPanelAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setShowAuthModal(true);
+      window.history.pushState({}, '', '/');
+      return;
+    }
+
+    setViewMode('user-panel');
+  };
+
   const handleViewDetails = (template: WeddingTemplate) => {
     setSelectedTemplate(template);
     setViewMode('detail');
@@ -89,6 +120,11 @@ function App() {
   // Tampilkan admin panel
   if (viewMode === 'admin') {
     return <AdminPanel />;
+  }
+
+  // Tampilkan user panel
+  if (viewMode === 'user-panel') {
+    return <UserPanel />;
   }
 
   // Tampilkan halaman detail jika ada template yang dipilih
@@ -208,16 +244,32 @@ function App() {
       )}
 
       {/* Admin Access Button - Only visible for admin users */}
-      {isAdmin && (
+      {isAdmin && viewMode === 'home' && (
         <button
           onClick={() => {
             setViewMode('admin');
             window.history.pushState({}, '', '/admin');
           }}
-          className="fixed bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-2xl hover:shadow-purple-500/50 hover:scale-110 transition-all z-40"
+          className="fixed bottom-24 right-6 p-4 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-2xl hover:shadow-purple-500/50 hover:scale-110 transition-all z-40"
           title="Admin Panel"
         >
           <Sparkles className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* User Panel Access Button - Visible for logged in users */}
+      {user && viewMode === 'home' && (
+        <button
+          onClick={() => {
+            setViewMode('user-panel');
+            window.history.pushState({}, '', '/user-panel');
+          }}
+          className="fixed bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-2xl hover:shadow-pink-500/50 hover:scale-110 transition-all z-40 flex items-center space-x-2"
+          title="User Panel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
         </button>
       )}
     </div>
