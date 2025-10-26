@@ -1,17 +1,26 @@
-import { Eye, Heart, ShoppingCart, Sparkles, Star, Zap } from 'lucide-react';
+import { Eye, Heart, ShoppingCart, Sparkles, Star, Zap, Check } from 'lucide-react';
 import { WeddingTemplate } from '../lib/supabase';
 import { useState } from 'react';
+import { useCart } from '../contexts/CartContext';
 
 interface TemplateCardProps {
   template: WeddingTemplate;
   onViewDetails: (template: WeddingTemplate) => void;
   index?: number;
   viewMode?: 'grid-3' | 'grid-2';
+  isPurchased?: boolean;
 }
 
-export default function TemplateCard({ template, onViewDetails, index = 0, viewMode = 'grid-3' }: TemplateCardProps) {
+export default function TemplateCard({ template, onViewDetails, index = 0, viewMode = 'grid-3', isPurchased = false }: TemplateCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { addToCart, cartItems } = useCart();
+  const isInCart = cartItems.some(item => item.id === template.id);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToCart(template);
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -83,6 +92,31 @@ export default function TemplateCard({ template, onViewDetails, index = 0, viewM
               <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
               <span className="hidden xs:inline">Featured</span>
               <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            </div>
+          </div>
+        </div>
+      )}
+      
+            {/* In Cart Badge */}
+      {isInCart && (
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 animate-slideInRight">
+          <div className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center space-x-1 shadow-lg">
+            <Check className="w-3 h-3" />
+            <span className="hidden xs:inline">Di Keranjang</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Purchased Badge */}
+      {isPurchased && (
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 animate-slideInRight">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 blur-lg opacity-60 animate-pulse" />
+            <div className="relative px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold flex items-center space-x-1 shadow-lg">
+              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="hidden xs:inline">Dibeli</span>
             </div>
           </div>
         </div>
@@ -193,11 +227,23 @@ export default function TemplateCard({ template, onViewDetails, index = 0, viewM
             
             <button
               onClick={() => onViewDetails(template)}
-              className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0`}
+              className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0 ${isPurchased ? 'opacity-75' : ''}`}
             >
               <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:rotate-12 transition-transform duration-300" />
-                <span className="text-xs sm:text-sm">Beli</span>
+                {isPurchased ? (
+                  <>
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span className="text-xs sm:text-sm">Lihat</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:rotate-12 transition-transform duration-300" />
+                    <span className="text-xs sm:text-sm">Beli</span>
+                  </>
+                )}
               </span>
               <div className="absolute inset-0 bg-white opacity-0 group-hover/cta:opacity-20 transition-opacity duration-300" />
             </button>
@@ -231,13 +277,28 @@ export default function TemplateCard({ template, onViewDetails, index = 0, viewM
             transform: translateX(0);
           }
         }
+        
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
 
-      .animate-fadeInUp {
+        .animate-fadeInUp {
           animation: fadeInUp 0.6s ease-out;
         }
 
         .animate-slideInLeft {
           animation: slideInLeft 0.8s ease-out;
+        }
+        
+        .animate-slideInRight {
+          animation: slideInRight 0.8s ease-out;
         }
       `}</style>
     </div>

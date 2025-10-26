@@ -1,6 +1,7 @@
 import { Heart, ShoppingCart, User, LogOut, LogIn, Menu, X, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
+import { useCart } from '../contexts/CartContext';
 
 interface NavbarProps {
   onAuthClick: () => void;
@@ -12,6 +13,7 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('home');
+  const { getCartCount } = useCart();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,13 +61,12 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
             {/* Logo */}
             <div className="flex items-center space-x-3 group cursor-pointer">
               <div className="relative">
-                <Heart 
-                  className={`w-9 h-9 text-[#f4b9b8] transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 ${
+                <img 
+                  className={`w-9 h-9 text-[#f4b9b8] transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 rounded-md ${
                     isScrolled ? 'animate-pulse' : ''
                   }`} 
-                  fill="#f4b9b8" 
+                  fill="#f4b9b8" src="https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761489579724.png"
                 />
-                <Sparkles className="w-4 h-4 text-[#fff4bd] absolute -top-1 -right-1 animate-bounce" />
               </div>
               <span className="font-logo text-2xl font-bold bg-gradient-to-r from-[#f4b9b8] via-[#887bb0] to-[#85d2d0] bg-clip-text text-transparent transform transition-all duration-300 group-hover:scale-105">
                 WedTalku
@@ -104,9 +105,11 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
                 className="relative p-3 rounded-full bg-gradient-to-r from-[#fff4bd]/20 to-[#85d2d0]/20 hover:from-[#fff4bd]/40 hover:to-[#85d2d0]/40 transition-all duration-300 hover:scale-110 group"
               >
                 <ShoppingCart className="w-5 h-5 text-gray-700 group-hover:text-[#887bb0] transition-colors" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">
-                  0
-                </span>
+                {getCartCount() > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">
+                    {getCartCount()}
+                  </span>
+                )}
               </button>
 
               {/* User Section */}

@@ -10,9 +10,10 @@ interface TemplateDetailProps {
   template: WeddingTemplate;
   onClose: () => void;
   onPurchase: (template: WeddingTemplate) => void;
+  isPurchased?: boolean;
 }
 
-export default function TemplateDetail({ template, onClose, onPurchase }: TemplateDetailProps) {
+export default function TemplateDetail({ template, onClose, onPurchase, isPurchased = false }: TemplateDetailProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState<'features' | 'specs' | 'pricing'>('features');
@@ -130,13 +131,21 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
               >
                 <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
               </button>
-              <button 
-                onClick={() => onPurchase(template)}
-                className="px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
-              >
-                <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Beli</span>
-              </button>
+              
+              {isPurchased ? (
+                <div className="flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="hidden xs:inline">Sudah Dibeli</span>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => onPurchase(template)}
+                  className="px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
+                >
+                  <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Beli</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -168,6 +177,16 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
                   <div className={`px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r ${config.gradient} text-white text-xs sm:text-sm font-bold flex items-center space-x-1 shadow-lg`}>
                     <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
                     <span>Featured</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Purchased Badge */}
+              {isPurchased && (
+                <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                  <div className="px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center space-x-1 shadow-lg">
+                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span>Dibeli</span>
                   </div>
                 </div>
               )}
@@ -235,16 +254,25 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
 
               {/* Price */}
               <div className="flex flex-col xs:flex-row xs:items-baseline gap-2 xs:gap-3 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-50 to-cyan-50 border border-purple-200">
-                <span className="text-xs sm:text-sm text-gray-600">Mulai dari</span>
-                <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>
-                  {formatPrice(template.price)}
-                </span>
-                <span className="text-xs sm:text-sm text-gray-500 line-through">
-                  {formatPrice(template.price * 1.5)}
-                </span>
-                <span className="ml-auto px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-bold">
-                  Save 33%
-                </span>
+                {isPurchased ? (
+                  <div className="flex items-center space-x-2 text-green-600">
+                    <CheckCircle2 className="w-6 h-6" />
+                    <span className="text-xl font-bold">Template Sudah Dibeli</span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-xs sm:text-sm text-gray-600">Mulai dari</span>
+                    <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>
+                      {formatPrice(template.price)}
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500 line-through">
+                      {formatPrice(template.price * 1.5)}
+                    </span>
+                    <span className="ml-auto px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-bold">
+                      Save 33%
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -347,7 +375,7 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
                     <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
                     <span>Pilih Paket</span>
                   </h3>
-                  <div className="grid gap-4 sm:gap-6">
+                  <div className="grid gap-3 sm:gap-4">
                     {pricingPackages.map((pkg, idx) => (
                       <div
                         key={idx}
@@ -355,7 +383,7 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
                           pkg.popular
                             ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-cyan-50'
                             : 'border-gray-200 bg-white hover:border-purple-300'
-                        }`}
+                        } ${isPurchased ? 'opacity-60' : ''}`}
                       >
                         {pkg.popular && (
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -384,14 +412,17 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
                         </div>
 
                         <button
-                          onClick={() => onPurchase(template)}
+                          onClick={() => !isPurchased && onPurchase(template)}
+                          disabled={isPurchased}
                           className={`w-full py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all text-sm sm:text-base ${
-                            pkg.popular
+                            isPurchased
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : pkg.popular
                               ? `bg-gradient-to-r ${config.gradient} text-white hover:shadow-xl hover:scale-105`
                               : 'border-2 border-purple-500 text-purple-600 hover:bg-purple-50'
                           }`}
                         >
-                          Pilih {pkg.name}
+                          {isPurchased ? 'Sudah Dibeli' : `Pilih ${pkg.name}`}
                         </button>
                       </div>
                     ))}
@@ -450,11 +481,11 @@ export default function TemplateDetail({ template, onClose, onPurchase }: Templa
           scrollbar-width: none;
         }
         @media (min-width: 475px) {
-          .xs\:inline { display: inline; }
-          .xs\:flex-row { flex-direction: row; }
-          .xs\:items-baseline { align-items: baseline; }
-          .xs\:gap-3 { gap: 0.75rem; }
-          .xs\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .xs\\:inline { display: inline; }
+          .xs\\:flex-row { flex-direction: row; }
+          .xs\\:items-baseline { align-items: baseline; }
+          .xs\\:gap-3 { gap: 0.75rem; }
+          .xs\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
       `}</style>
     </div>

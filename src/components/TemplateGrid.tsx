@@ -8,12 +8,19 @@ interface TemplateGridProps {
   filterCategory?: string;
   showFeaturedOnly?: boolean;
   featuredLayout?: boolean;
+  userPurchases?: string[];
 }
 
 type ViewMode = 'grid-3' | 'grid-2';
 type SortOption = 'newest' | 'popular' | 'price-low' | 'price-high';
 
-export default function TemplateGrid({ onViewDetails, filterCategory, showFeaturedOnly, featuredLayout }: TemplateGridProps) {
+export default function TemplateGrid({ 
+  onViewDetails, 
+  filterCategory, 
+  showFeaturedOnly, 
+  featuredLayout,
+  userPurchases = [] 
+}: TemplateGridProps) {
   const [templates, setTemplates] = useState<WeddingTemplate[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<WeddingTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -256,6 +263,7 @@ export default function TemplateGrid({ onViewDetails, filterCategory, showFeatur
               onViewDetails={onViewDetails}
               index={index}
               viewMode={viewMode}
+              isPurchased={userPurchases.includes(template.id)}
             />
           ))}
         </div>
