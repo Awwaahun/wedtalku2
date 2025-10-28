@@ -26,7 +26,20 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
       minimumFractionDigits: 0,
     }).format(price);
   };
-
+  
+  const handlePurchase = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('🛒 Purchase button clicked for:', template.title);
+    console.log('🔍 onPurchase function exists?', !!onPurchase);
+    
+    if (onPurchase) {
+      console.log('✅ Calling onPurchase...');
+      onPurchase(template);
+    } else {
+      console.error('❌ onPurchase is undefined!');
+    }
+  };
+  
   const getCategoryConfig = (category: string) => {
     const configs = {
       modern: { gradient: 'from-cyan-500 to-blue-500', color: 'cyan', bg: 'bg-cyan-100', text: 'text-cyan-700' },
@@ -139,7 +152,7 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 </div>
               ) : (
                 <button 
-                  onClick={() => onPurchase(template)}
+                  onClick={handlePurchase}
                   className="px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
                 >
                   <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />

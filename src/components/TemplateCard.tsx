@@ -1,26 +1,19 @@
 import { Eye, Heart, ShoppingCart, Sparkles, Star, Zap, Check } from 'lucide-react';
 import { WeddingTemplate } from '../lib/supabase';
 import { useState } from 'react';
-import { useCart } from '../contexts/CartContext';
 
 interface TemplateCardProps {
   template: WeddingTemplate;
   onViewDetails: (template: WeddingTemplate) => void;
+  onPurchase: (template: WeddingTemplate) => void;
   index?: number;
   viewMode?: 'grid-3' | 'grid-2';
   isPurchased?: boolean;
 }
 
-export default function TemplateCard({ template, onViewDetails, index = 0, viewMode = 'grid-3', isPurchased = false }: TemplateCardProps) {
+export default function TemplateCard({ template, onViewDetails, onPurchase, index = 0, viewMode = 'grid-3', isPurchased = false }: TemplateCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const { addToCart, cartItems } = useCart();
-  const isInCart = cartItems.some(item => item.id === template.id);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    addToCart(template);
-  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -63,6 +56,19 @@ export default function TemplateCard({ template, onViewDetails, index = 0, viewM
     };
     return configs[category as keyof typeof configs] || configs.modern;
   };
+  
+  const handlePurchase = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('🛒 Purchase button clicked for:', template.title);
+    console.log('🔍 onPurchase function exists?', !!onPurchase);
+    
+    if (onPurchase) {
+      console.log('✅ Calling onPurchase...');
+      onPurchase(template);
+    } else {
+      console.error('❌ onPurchase is undefined!');
+    }
+  };
 
   const categoryConfig = getCategoryConfig(template.category);
 
@@ -93,16 +99,6 @@ export default function TemplateCard({ template, onViewDetails, index = 0, viewM
               <span className="hidden xs:inline">Featured</span>
               <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             </div>
-          </div>
-        </div>
-      )}
-      
-            {/* In Cart Badge */}
-      {isInCart && (
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 animate-slideInRight">
-          <div className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-green-500 text-white text-xs font-bold flex items-center space-x-1 shadow-lg">
-            <Check className="w-3 h-3" />
-            <span className="hidden xs:inline">Di Keranjang</span>
           </div>
         </div>
       )}
@@ -226,7 +222,7 @@ export default function TemplateCard({ template, onViewDetails, index = 0, viewM
             </div>
             
             <button
-              onClick={() => onViewDetails(template)}
+              onClick={isPurchased ? () => onViewDetails(template) : handlePurchase}
               className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0 ${isPurchased ? 'opacity-75' : ''}`}
             >
               <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">

@@ -5,6 +5,7 @@ import { Loader2, Package, Search, Filter, Grid3x3, LayoutGrid, Sparkles } from 
 
 interface TemplateGridProps {
   onViewDetails: (template: WeddingTemplate) => void;
+  onPurchase?: (template: WeddingTemplate) => void; // ADD THIS
   filterCategory?: string;
   showFeaturedOnly?: boolean;
   featuredLayout?: boolean;
@@ -16,6 +17,7 @@ type SortOption = 'newest' | 'popular' | 'price-low' | 'price-high';
 
 export default function TemplateGrid({ 
   onViewDetails, 
+  onPurchase,
   filterCategory, 
   showFeaturedOnly, 
   featuredLayout,
@@ -261,6 +263,7 @@ export default function TemplateGrid({
               key={template.id}
               template={template}
               onViewDetails={onViewDetails}
+              onPurchase={onPurchase}
               index={index}
               viewMode={viewMode}
               isPurchased={userPurchases.includes(template.id)}

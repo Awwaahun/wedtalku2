@@ -1,19 +1,17 @@
-import { Heart, ShoppingCart, User, LogOut, LogIn, Menu, X, Sparkles } from 'lucide-react';
+import { Heart, User, LogOut, LogIn, Menu, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
-import { useCart } from '../contexts/CartContext';
 
 interface NavbarProps {
   onAuthClick: () => void;
-  onCartClick: () => void;
+  onCartClick: () => void; // Keep for compatibility but won't use
 }
 
-export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
+export default function Navbar({ onAuthClick }: NavbarProps) {
   const [user, setUser] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('home');
-  const { getCartCount } = useCart();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -65,7 +63,9 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
                   className={`w-9 h-9 text-[#f4b9b8] transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 rounded-md ${
                     isScrolled ? 'animate-pulse' : ''
                   }`} 
-                  fill="#f4b9b8" src="https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761489579724.png"
+                  fill="#f4b9b8" 
+                  src="https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761489579724.png"
+                  alt="WedTalku Logo"
                 />
               </div>
               <span className="font-logo text-2xl font-bold bg-gradient-to-r from-[#f4b9b8] via-[#887bb0] to-[#85d2d0] bg-clip-text text-transparent transform transition-all duration-300 group-hover:scale-105">
@@ -97,45 +97,32 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
               ))}
             </div>
 
-            {/* Right Section */}
+            {/* Right Section - REMOVED CART BUTTON */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* Cart Button */}
-              <button
-                onClick={onCartClick}
-                className="relative p-3 rounded-full bg-gradient-to-r from-[#fff4bd]/20 to-[#85d2d0]/20 hover:from-[#fff4bd]/40 hover:to-[#85d2d0]/40 transition-all duration-300 hover:scale-110 group"
-              >
-                <ShoppingCart className="w-5 h-5 text-gray-700 group-hover:text-[#887bb0] transition-colors" />
-                {getCartCount() > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">
-                    {getCartCount()}
-                  </span>
-                )}
-              </button>
-
               {/* User Section */}
               {user ? (
                 <div className="flex items-center space-x-2 animate-[slideIn_0.3s_ease-out]">
-    <button
-      onClick={() => {
-        window.location.href = '/user-panel';
-      }}
-      className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#887bb0]/20 border border-[#887bb0]/20 hover:border-[#887bb0]/40 transition-all duration-300"
-    >
-      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
-        <User className="w-4 h-4 text-white" />
-      </div>
-      <span className="text-sm font-semibold text-gray-700">
-        {user.email?.split('@')[0]}
-      </span>
-    </button>
-    <button
-      onClick={handleSignOut}
-      className="p-2.5 rounded-full bg-red-50 hover:bg-red-100 transition-all duration-300 hover:scale-110 group"
-      title="Keluar"
-    >
-      <LogOut className="w-5 h-5 text-red-600 group-hover:rotate-12 transition-transform" />
-    </button>
-  </div>
+                  <button
+                    onClick={() => {
+                      window.location.href = '/user-panel';
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#887bb0]/20 border border-[#887bb0]/20 hover:border-[#887bb0]/40 transition-all duration-300"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {user.email?.split('@')[0]}
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="p-2.5 rounded-full bg-red-50 hover:bg-red-100 transition-all duration-300 hover:scale-110 group"
+                    title="Keluar"
+                  >
+                    <LogOut className="w-5 h-5 text-red-600 group-hover:rotate-12 transition-transform" />
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={onAuthClick}
@@ -191,27 +178,22 @@ export default function Navbar({ onAuthClick, onCartClick }: NavbarProps) {
             ))}
 
             <div className="pt-4 space-y-3 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  onCartClick();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-[#fff4bd]/20 to-[#85d2d0]/20 text-gray-700 hover:from-[#fff4bd]/40 hover:to-[#85d2d0]/40 transition-all"
-              >
-                <span className="font-medium">Keranjang</span>
-                <ShoppingCart className="w-5 h-5" />
-              </button>
-
               {user ? (
                 <>
-                  <div className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#85d2d0]/20 to-[#887bb0]/20">
+                  <button
+                    onClick={() => {
+                      window.location.href = '/user-panel';
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#85d2d0]/20 to-[#887bb0]/20"
+                  >
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
                       <User className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-sm font-semibold text-gray-700">
                       {user.email?.split('@')[0]}
                     </span>
-                  </div>
+                  </button>
                   <button
                     onClick={() => {
                       handleSignOut();
