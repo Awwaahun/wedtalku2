@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Package, ShoppingBag, Users, Settings,
   Plus, Edit, Trash2, Eye, Search, Filter, TrendingUp,
@@ -27,7 +27,7 @@ export default function AdminPanel() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<WeddingTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'sold'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'sold'>('all');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
@@ -152,7 +152,7 @@ export default function AdminPanel() {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">
                   Admin Panel
                 </h1>
-                <p className="text-xs text-gray-500">Wedding Marketplace</p>
+                <p className="text-xs text-gray-500">Wedding Invitation Platform</p>
               </div>
             </div>
 
@@ -176,7 +176,7 @@ export default function AdminPanel() {
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
               { id: 'templates', icon: Package, label: 'Templates' },
-              { id: 'purchases', icon: ShoppingBag, label: 'Pembelian' },
+              { id: 'purchases', icon: ShoppingBag, label: 'Undangan' },
               { id: 'users', icon: Users, label: 'Pengguna' },
             ].map((item) => {
               const Icon = item.icon;
@@ -222,13 +222,13 @@ export default function AdminPanel() {
                 />
                 <StatCard
                   icon={DollarSign}
-                  label="Total Revenue"
+                  label="Total Pendapatan"
                   value={formatPrice(stats.totalRevenue)}
                   color="from-purple-500 to-pink-500"
                 />
                 <StatCard
                   icon={ShoppingBag}
-                  label="Total Pembelian"
+                  label="Total Undangan Dibuat"
                   value={stats.totalPurchases}
                   color="from-orange-500 to-red-500"
                 />
@@ -295,7 +295,7 @@ export default function AdminPanel() {
                   >
                     <option value="all">Semua Status</option>
                     <option value="active">Active</option>
-                    <option value="draft">Draft</option>
+                    <option value="inactive">Inactive</option>
                     <option value="sold">Sold</option>
                   </select>
                 </div>
@@ -344,7 +344,7 @@ export default function AdminPanel() {
                           <td className="px-6 py-4">
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                               template.status === 'active' ? 'bg-green-100 text-green-700' :
-                              template.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
+                              template.status === 'inactive' ? 'bg-yellow-100 text-yellow-700' :
                               'bg-gray-100 text-gray-700'
                             }`}>
                               {template.status}
@@ -382,9 +382,9 @@ export default function AdminPanel() {
 
           {activeTab === 'purchases' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Riwayat Pembelian</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Daftar Undangan</h2>
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <p className="text-gray-600">Data pembelian akan ditampilkan di sini.</p>
+                <p className="text-gray-600">Data undangan yang dibuat oleh pengguna akan ditampilkan di sini.</p>
               </div>
             </div>
           )}
@@ -658,7 +658,7 @@ function TemplateFormModal({ template, onClose, onSave }: {
               className="px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-purple-400 outline-none transition-colors"
             >
               <option value="active">Active</option>
-              <option value="draft">Draft</option>
+              <option value="inactive">Inactive</option>
               <option value="sold">Sold</option>
             </select>
           </div>

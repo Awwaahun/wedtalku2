@@ -1,23 +1,36 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
-  ArrowLeft, Eye, Heart, ShoppingCart, Star, Check, Zap, 
+  ArrowLeft, Eye, Heart, Star, Check, Zap, 
   Shield, Palette, Code, Headphones, ExternalLink,
-  Download, Sparkles, CheckCircle2, X, Monitor
+  Download, Sparkles, CheckCircle2, X, Monitor,
+  Gift, Music, Map, Image as ImageIcon, User
 } from 'lucide-react';
 import { WeddingTemplate } from '../lib/supabase';
 
 interface TemplateDetailProps {
   template: WeddingTemplate;
   onClose: () => void;
-  onPurchase: (template: WeddingTemplate) => void;
-  isPurchased?: boolean;
+  onCreateInvitation: (template: WeddingTemplate) => void;
+  isCreated: boolean;
+  onGoToUserPanel: () => void;
+  favoriteIds?: string[];
+  onToggleFavorite?: (templateId: string) => void;
 }
 
-export default function TemplateDetail({ template, onClose, onPurchase, isPurchased = false }: TemplateDetailProps) {
+export default function TemplateDetail({ 
+  template, 
+  onClose, 
+  onCreateInvitation, 
+  isCreated, 
+  onGoToUserPanel,
+  favoriteIds,
+  onToggleFavorite 
+}: TemplateDetailProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState<'features' | 'specs' | 'pricing'>('features');
-  const [isLiked, setIsLiked] = useState(false);
+  const [activeTab, setActiveTab] = useState<'features' | 'specs'>('features');
+  
+  const isFavorited = favoriteIds?.includes(template.id);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -27,16 +40,12 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
     }).format(price);
   };
   
-  const handlePurchase = (e: React.MouseEvent) => {
+  const handleCreateInvitation = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('🛒 Purchase button clicked for:', template.title);
-    console.log('🔍 onPurchase function exists?', !!onPurchase);
-    
-    if (onPurchase) {
-      console.log('✅ Calling onPurchase...');
-      onPurchase(template);
+    if (onCreateInvitation) {
+      onCreateInvitation(template);
     } else {
-      console.error('❌ onPurchase is undefined!');
+      console.error('❌ onCreateInvitation is undefined!');
     }
   };
   
@@ -66,55 +75,24 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
     { icon: Headphones, label: 'Support', value: '24/7 Support' },
   ];
 
-  const includedFeatures = [
-    { icon: CheckCircle2, text: 'Source Code Lengkap' },
-    { icon: CheckCircle2, text: 'Dokumentasi Instalasi' },
-    { icon: CheckCircle2, text: 'Tutorial Video' },
-    { icon: CheckCircle2, text: 'Free Updates (6 Bulan)' },
-    { icon: CheckCircle2, text: 'Lifetime Access' },
-    { icon: CheckCircle2, text: 'Consultation Support' },
+  const onlineFeatures = [
+    { icon: CheckCircle2, text: 'Custom Nama & Detail Acara' },
+    { icon: CheckCircle2, text: 'Galeri Foto & Video Pre-wedding' },
+    { icon: CheckCircle2, text: 'Countdown Timer Acara' },
+    { icon: CheckCircle2, text: 'Buku Tamu Digital (Guest Book)' },
+    { icon: CheckCircle2, text: 'Peta Lokasi Google Maps' },
+    { icon: CheckCircle2, text: 'Background Music' },
+    { icon: CheckCircle2, text: 'Amplop Digital / Hadiah' },
+    { icon: CheckCircle2, text: 'Link Unik & Shareable' },
   ];
-
-  const pricingPackages = [
-    {
-      name: 'Basic',
-      price: template.price,
-      features: [
-        'Source Code Template',
-        'Basic Documentation',
-        'Email Support',
-        '3 Months Updates',
-        'Single Project Use',
-      ],
-      popular: false,
-    },
-    {
-      name: 'Professional',
-      price: template.price * 1.5,
-      features: [
-        'Source Code Template',
-        'Full Documentation',
-        'Priority Email Support',
-        '6 Months Updates',
-        'Multiple Project Use',
-        'Customization Guide',
-      ],
-      popular: true,
-    },
-    {
-      name: 'Enterprise',
-      price: template.price * 2,
-      features: [
-        'Source Code Template',
-        'Premium Documentation',
-        '24/7 Priority Support',
-        'Lifetime Updates',
-        'Unlimited Projects',
-        'Custom Modifications',
-        'Direct Consultation',
-      ],
-      popular: false,
-    },
+  
+  const platformFeatures = [
+    { icon: ImageIcon, text: 'Manajemen Media (Foto & Musik)' },
+    { icon: Gift, text: 'Manajemen Hadiah Digital' },
+    { icon: Map, text: 'Manajemen Peta & Lokasi' },
+    { icon: Music, text: 'Manajemen Musik Latar' },
+    { icon: Headphones, text: 'Dukungan Pelanggan 24/7' },
+    { icon: Download, text: 'Download Data Buku Tamu' },
   ];
 
   const config = getCategoryConfig(template.category);
@@ -135,28 +113,33 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
 
             <div className="flex items-center space-x-2 sm:space-x-3">
               <button 
-                onClick={() => setIsLiked(!isLiked)}
+                onClick={() => onToggleFavorite?.(template.id)}
                 className={`p-1.5 sm:p-2 rounded-full border-2 transition-all ${
-                  isLiked 
+                  isFavorited 
                     ? 'border-pink-500 text-pink-500 bg-pink-50' 
                     : 'border-gray-200 text-gray-600 hover:border-purple-500 hover:text-purple-600'
                 }`}
               >
-                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorited ? 'fill-current' : ''}`} />
               </button>
               
-              {isPurchased ? (
-                <div className="flex items-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="hidden xs:inline">Sudah Dibeli</span>
-                </div>
+              {isCreated ? (
+                <button 
+                  onClick={onGoToUserPanel}
+                  className="px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
+                >
+                  <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Buka Panel</span>
+                  <span className="xs:hidden">Panel</span>
+                </button>
               ) : (
                 <button 
-                  onClick={handlePurchase}
+                  onClick={handleCreateInvitation}
                   className="px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base"
                 >
-                  <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden xs:inline">Beli</span>
+                  <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Gunakan Template Ini</span>
+                  <span className="xs:hidden">Gunakan</span>
                 </button>
               )}
             </div>
@@ -168,7 +151,6 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
         <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Left Column - Gallery */}
           <div className="space-y-4 sm:space-y-6">
-            {/* Main Image */}
             <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl group">
               <img
                 src={galleryImages[selectedImage]}
@@ -177,7 +159,6 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
-              {/* Preview Button */}
               <button
                 onClick={() => setShowPreview(true)}
                 className="absolute inset-0 m-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
@@ -194,14 +175,12 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 </div>
               )}
 
-              {/* Views Counter */}
               <div className="absolute top-3 right-3 sm:top-4 sm:right-4 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-xs sm:text-sm font-medium flex items-center space-x-1">
                 <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden xs:inline">{template.views_count.toLocaleString()}</span>
               </div>
             </div>
 
-            {/* Thumbnail Gallery */}
             <div className="grid grid-cols-4 gap-2 sm:gap-4">
               {galleryImages.map((img, idx) => (
                 <button
@@ -221,19 +200,10 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 </button>
               ))}
             </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 gap-3 sm:gap-4">
-              <button className="flex items-center justify-center space-x-1 sm:space-x-2 px-3 py-3 sm:px-6 sm:py-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100 text-purple-700 font-semibold hover:from-purple-200 hover:to-cyan-200 transition-all text-sm sm:text-base">
-                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Download PDF</span>
-              </button>
-            </div>
           </div>
 
           {/* Right Column - Details */}
           <div className="space-y-6 sm:space-y-8">
-            {/* Title & Category */}
             <div className="space-y-3 sm:space-y-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className={`px-3 py-1 rounded-full ${config.bg} ${config.text} text-xs sm:text-sm font-bold`}>
@@ -247,42 +217,39 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 </div>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 leading-tight">
-                {template.title}
-              </h1>
+              <div className="flex flex-wrap items-center gap-4">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 leading-tight">
+                  {template.title}
+                </h1>
+                {isCreated && (
+                  <div className="px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500 to-cyan-500 text-white text-sm font-bold flex items-center space-x-2 shadow-lg animate-fadeIn">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>Sudah Dimiliki</span>
+                  </div>
+                )}
+              </div>
 
               <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed">
                 {template.description}
               </p>
 
-              {/* Price */}
               <div className="flex flex-col xs:flex-row xs:items-baseline gap-2 xs:gap-3 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-50 to-cyan-50 border border-purple-200">
-                {isPurchased ? (
-                  <div className="flex items-center space-x-2 text-green-600">
-                    <CheckCircle2 className="w-6 h-6" />
-                    <span className="text-xl font-bold">Template Sudah Dibeli</span>
-                  </div>
-                ) : (
-                  <>
-                    <span className="text-xs sm:text-sm text-gray-600">Mulai dari</span>
-                    <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>
-                      {formatPrice(template.price)}
-                    </span>
-                    <span className="text-xs sm:text-sm text-gray-500 line-through">
-                      {formatPrice(template.price * 1.5)}
-                    </span>
-                    <span className="ml-auto px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-bold">
-                      Save 33%
-                    </span>
-                  </>
-                )}
+                <span className="text-xs sm:text-sm text-gray-600">Harga</span>
+                <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>
+                  {formatPrice(template.price)}
+                </span>
+                <span className="text-xs sm:text-sm text-gray-500 line-through">
+                  {formatPrice(template.price * 1.5)}
+                </span>
+                <span className="ml-auto px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-green-100 text-green-700 text-xs sm:text-sm font-bold">
+                  Save 33%
+                </span>
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
               <div className="flex space-x-4 sm:space-x-8 min-w-max px-1">
-                {(['features', 'specs', 'pricing'] as const).map((tab) => (
+                {(['features', 'specs'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -292,9 +259,8 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    {tab === 'features' && 'Fitur'}
-                    {tab === 'specs' && 'Spesifikasi'}
-                    {tab === 'pricing' && 'Paket'}
+                    {tab === 'features' && 'Fitur Undangan'}
+                    {tab === 'specs' && 'Spesifikasi Teknis'}
                     {activeTab === tab && (
                       <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-cyan-500" />
                     )}
@@ -309,28 +275,30 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 <div className="space-y-4 sm:space-y-6 animate-fadeIn">
                   <h3 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center space-x-2">
                     <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
-                    <span>Fitur Utama</span>
+                    <span>Fitur Interaktif Undangan</span>
                   </h3>
                   <div className="grid gap-2 sm:gap-3">
-                    {template.features.map((feature, idx) => (
+                    {onlineFeatures.map((feature, idx) => {
+                      const Icon = feature.icon;
+                      return (
                       <div
                         key={idx}
                         className="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all group"
                       >
                         <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-r ${config.gradient} flex items-center justify-center flex-shrink-0`}>
-                          <Check className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
+                          <Icon className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
                         </div>
                         <span className="text-sm sm:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-colors">
-                          {feature}
+                          {feature.text}
                         </span>
                       </div>
-                    ))}
+                    )})}
                   </div>
 
                   <div className="mt-6 sm:mt-8 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-50 to-cyan-50 border border-purple-200">
-                    <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Yang Anda Dapatkan</h4>
+                    <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Fitur Platform</h4>
                     <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
-                      {includedFeatures.map((item, idx) => {
+                      {platformFeatures.map((item, idx) => {
                         const Icon = item.icon;
                         return (
                           <div key={idx} className="flex items-center space-x-2 text-gray-700">
@@ -348,7 +316,7 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 <div className="space-y-3 sm:space-y-4 animate-fadeIn">
                   <h3 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center space-x-2">
                     <Code className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
-                    <span>Spesifikasi</span>
+                    <span>Spesifikasi Teknis</span>
                   </h3>
                   <div className="grid gap-3 sm:gap-4">
                     {specifications.map((spec, idx) => {
@@ -368,67 +336,6 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'pricing' && (
-                <div className="space-y-4 sm:space-y-6 animate-fadeIn">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center space-x-2">
-                    <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
-                    <span>Pilih Paket</span>
-                  </h3>
-                  <div className="grid gap-3 sm:gap-4">
-                    {pricingPackages.map((pkg, idx) => (
-                      <div
-                        key={idx}
-                        className={`relative p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 transition-all hover:shadow-xl ${
-                          pkg.popular
-                            ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-cyan-50'
-                            : 'border-gray-200 bg-white hover:border-purple-300'
-                        } ${isPurchased ? 'opacity-60' : ''}`}
-                      >
-                        {pkg.popular && (
-                          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                            <span className={`px-3 sm:px-4 py-1 rounded-full bg-gradient-to-r ${config.gradient} text-white text-xs font-bold shadow-lg whitespace-nowrap`}>
-                              ⭐ POPULER
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                          <h4 className="text-lg sm:text-xl font-bold text-gray-800">{pkg.name}</h4>
-                          <div className="text-right">
-                            <div className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}>
-                              {formatPrice(pkg.price)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                          {pkg.features.map((feature, fIdx) => (
-                            <div key={fIdx} className="flex items-start space-x-2">
-                              <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-xs sm:text-sm text-gray-700">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <button
-                          onClick={() => !isPurchased && onPurchase(template)}
-                          disabled={isPurchased}
-                          className={`w-full py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all text-sm sm:text-base ${
-                            isPurchased
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : pkg.popular
-                              ? `bg-gradient-to-r ${config.gradient} text-white hover:shadow-xl hover:scale-105`
-                              : 'border-2 border-purple-500 text-purple-600 hover:bg-purple-50'
-                          }`}
-                        >
-                          {isPurchased ? 'Sudah Dibeli' : `Pilih ${pkg.name}`}
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}

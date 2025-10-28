@@ -8,10 +8,10 @@ import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import UserPanel from './components/UserPanel';
-import PurchaseModal from './components/PurchaseModal';
+import CreateInvitationModal from './components/PurchaseModal'; // Renamed for clarity
 import { WeddingTemplate } from './lib/supabase';
 import { supabase } from './lib/supabase';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, User as UserIcon } from 'lucide-react';
 
 type ViewMode = 'home' | 'detail' | 'admin' | 'user-panel';
 
@@ -22,10 +22,11 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [userPurchases, setUserPurchases] = useState<string[]>([]);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState(false);
-  const [purchaseNotification, setPurchaseNotification] = useState<{
+  const [createdInvitationIds, setCreatedInvitationIds] = useState<string[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creationLoading, setCreationLoading] = useState(false);
+  const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
@@ -42,36 +43,104 @@ function App() {
     setUser(currentUser);
 
     if (currentUser) {
-      loadUserPurchases(currentUser.id);
+      loadUserData(currentUser.id);
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const newUser = session?.user ?? null;
       setUser(newUser);
       if (newUser) {
-        loadUserPurchases(newUser.id);
+        loadUserData(newUser.id);
       } else {
-        setUserPurchases([]);
+        setCreatedInvitationIds([]);
+        setFavoriteIds([]);
       }
     });
 
     return () => subscription.unsubscribe();
   };
+  
+  const loadUserData = (userId: string) => {
+    loadUserInvitations(userId);
+    loadUserFavorites(userId);
+  };
 
-  const loadUserPurchases = async (userId: string) => {
+  const loadUserInvitations = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('purchases')
+        .from('purchases') // This table now represents created invitations
         .select('template_id')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
+        .eq('user_id', userId);
 
       if (error) throw error;
       
-      const purchasedIds = data?.map(p => p.template_id) || [];
-      setUserPurchases(purchasedIds);
+      const invitationIds = data?.map(p => p.template_id) || [];
+      setCreatedInvitationIds(invitationIds);
     } catch (error) {
-      console.error('Error loading purchases:', error);
+      console.error('Error loading invitations:', error);
+    }
+  };
+
+  const loadUserFavorites = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('template_id')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+
+      const favIds = data?.map(f => f.template_id) || [];
+      setFavoriteIds(favIds);
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  };
+  
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleToggleFavorite = async (templateId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setShowAuthModal(true);
+      showNotification('error', 'Silakan login untuk menambahkan favorit.');
+      return;
+    }
+
+    const isFavorited = favoriteIds.includes(templateId);
+    
+    // Optimistic update for snappy UI
+    if (isFavorited) {
+      setFavoriteIds(prev => prev.filter(id => id !== templateId));
+    } else {
+      setFavoriteIds(prev => [...prev, templateId]);
+    }
+
+    try {
+      if (isFavorited) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .match({ user_id: user.id, template_id: templateId });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({ user_id: user.id, template_id: templateId });
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert optimistic update on error
+      if (isFavorited) {
+        setFavoriteIds(prev => [...prev, templateId]);
+      } else {
+        setFavoriteIds(prev => prev.filter(id => id !== templateId));
+      }
+      showNotification('error', 'Gagal memperbarui favorit.');
     }
   };
 
@@ -134,6 +203,12 @@ function App() {
     setViewMode('user-panel');
   };
 
+  const handleGoToUserPanel = () => {
+    setViewMode('user-panel');
+    window.history.pushState({}, '', '/user-panel');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleViewDetails = (template: WeddingTemplate) => {
     setSelectedTemplate(template);
     setViewMode('detail');
@@ -146,100 +221,66 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // MAIN PURCHASE HANDLER
-  const handlePurchase = async (template: WeddingTemplate) => {
+  // MAIN INVITATION CREATION HANDLER
+  const handleCreateInvitation = async (template: WeddingTemplate) => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       setShowAuthModal(true);
-      setPurchaseNotification({
-        type: 'error',
-        message: 'Silakan login terlebih dahulu untuk membeli template'
-      });
-      setTimeout(() => setPurchaseNotification(null), 3000);
+      showNotification('error', 'Silakan login terlebih dahulu untuk membuat undangan');
       return;
     }
 
     setSelectedTemplate(template);
-    setShowPurchaseModal(true);
+    setShowCreateModal(true);
   };
 
-  const confirmPurchase = async () => {
+  const confirmCreateInvitation = async () => {
     if (!selectedTemplate) return;
 
-    setPurchaseLoading(true);
+    setCreationLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Check if user already purchased this template
-      const { data: existingPurchase } = await supabase
-        .from('purchases')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('template_id', selectedTemplate.id)
-        .eq('status', 'completed')
-        .single();
+      // Generate a unique slug for the invitation URL
+      const slug = `${selectedTemplate.title.toLowerCase().replace(/ /g, '-')}-${Date.now().toString().slice(-6)}`;
+      const invitationUrl = `/invitations/${slug}`;
 
-      if (existingPurchase) {
-        setPurchaseNotification({
-          type: 'error',
-          message: 'Anda sudah membeli template ini sebelumnya. Cek di User Panel.'
-        });
-        setShowPurchaseModal(false);
-        setTimeout(() => setPurchaseNotification(null), 4000);
-        return;
-      }
-
-      // Insert purchase
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('purchases')
+      // Insert invitation record
+      const { error: creationError } = await supabase
+        .from('purchases') // Using 'purchases' table to store created invitations
         .insert({
           user_id: user.id,
           template_id: selectedTemplate.id,
-          price_paid: selectedTemplate.price,
-          access_url: selectedTemplate.demo_url || selectedTemplate.thumbnail_url,
+          price_paid: selectedTemplate.price, // Still logging price, could be 0 for a free model
+          access_url: invitationUrl, // Storing the unique URL
           status: 'completed'
-        })
-        .select()
-        .single();
+        });
 
-      if (purchaseError) throw purchaseError;
+      if (creationError) throw creationError;
 
       // Update local state
-      setUserPurchases([...userPurchases, selectedTemplate.id]);
+      setCreatedInvitationIds([...createdInvitationIds, selectedTemplate.id]);
 
-      setPurchaseNotification({
+      setNotification({
         type: 'success',
-        message: `Pembelian "${selectedTemplate.title}" berhasil! Cek di User Panel Anda.`
+        message: `Undangan "${selectedTemplate.title}" berhasil dibuat! Cek di User Panel Anda.`
       });
       
-      setShowPurchaseModal(false);
-      setViewMode('home');
+      setShowCreateModal(false);
+      setViewMode('user-panel');
+      window.history.pushState({}, '', '/user-panel');
       setSelectedTemplate(null);
 
-      setTimeout(() => setPurchaseNotification(null), 5000);
+      setTimeout(() => setNotification(null), 5000);
 
     } catch (error: any) {
-      console.error('Purchase error:', error);
+      console.error('Invitation creation error:', error);
       
-      let errorMessage = 'Gagal melakukan pembelian. Silakan coba lagi.';
-      
-      if (error.message?.includes('sudah membeli')) {
-        errorMessage = 'Anda sudah membeli template ini sebelumnya';
-      } else if (error.message?.includes('duplicate')) {
-        errorMessage = 'Template ini sudah ada di pembelian Anda';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setPurchaseNotification({
-        type: 'error',
-        message: errorMessage
-      });
-      setTimeout(() => setPurchaseNotification(null), 3000);
+      showNotification('error', 'Gagal membuat undangan. Silakan coba lagi.');
     } finally {
-      setPurchaseLoading(false);
+      setCreationLoading(false);
     }
   };
 
@@ -251,7 +292,20 @@ function App() {
 
     // User panel
     if (viewMode === 'user-panel') {
-      return <UserPanel />;
+      return (
+        <UserPanel
+          onViewDetails={handleViewDetails}
+          onCreateInvitation={handleCreateInvitation}
+          onToggleFavorite={handleToggleFavorite}
+          favoriteIds={favoriteIds}
+          createdInvitationIds={createdInvitationIds}
+          onGoToUserPanel={handleGoToUserPanel}
+          onNavigateHome={() => {
+            setViewMode('home');
+            window.history.pushState({}, '', '/');
+          }}
+        />
+      );
     }
 
     // Template detail
@@ -260,8 +314,11 @@ function App() {
         <TemplateDetail
           template={selectedTemplate}
           onClose={handleCloseDetail}
-          onPurchase={handlePurchase}
-          isPurchased={userPurchases.includes(selectedTemplate.id)}
+          onCreateInvitation={handleCreateInvitation}
+          isCreated={createdInvitationIds.includes(selectedTemplate.id)}
+          onGoToUserPanel={handleGoToUserPanel}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={handleToggleFavorite}
         />
       );
     }
@@ -271,7 +328,6 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-white via-[#fff4bd]/10 to-[#85d2d0]/10">
         <Navbar
           onAuthClick={() => setShowAuthModal(true)}
-          onCartClick={() => {}} // Empty function - cart removed
         />
 
         <Hero />
@@ -293,10 +349,13 @@ function App() {
 
             <TemplateGrid
               onViewDetails={handleViewDetails}
-              onPurchase={handlePurchase}
+              onCreateInvitation={handleCreateInvitation}
               showFeaturedOnly={true}
               featuredLayout={true}
-              userPurchases={userPurchases}
+              createdInvitationIds={createdInvitationIds}
+              onGoToUserPanel={handleGoToUserPanel}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={handleToggleFavorite}
             />
           </div>
         </section>
@@ -308,7 +367,7 @@ function App() {
                 Semua Template
               </h2>
               <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-                Jelajahi koleksi lengkap template website pernikahan kami
+                Jelajahi koleksi lengkap template undangan pernikahan digital kami
               </p>
             </div>
 
@@ -319,9 +378,12 @@ function App() {
 
             <TemplateGrid
               onViewDetails={handleViewDetails}
-              onPurchase={handlePurchase}
+              onCreateInvitation={handleCreateInvitation}
               filterCategory={selectedCategory}
-              userPurchases={userPurchases}
+              createdInvitationIds={createdInvitationIds}
+              onGoToUserPanel={handleGoToUserPanel}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={handleToggleFavorite}
             />
           </div>
         </section>
@@ -332,7 +394,7 @@ function App() {
               Mengapa Memilih Kami?
             </h2>
             <p className="text-lg text-gray-600 mb-12">
-              Kami menyediakan template website pernikahan berkualitas tinggi yang mudah dikustomisasi
+              Kami menyediakan platform undangan pernikahan digital berkualitas tinggi yang mudah dikustomisasi
               dan siap pakai untuk hari spesial Anda.
             </p>
 
@@ -350,7 +412,7 @@ function App() {
                   <Sparkles className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">Mudah Dikustomisasi</h3>
-                <p className="text-gray-600">Ubah teks, foto, dan warna sesuai keinginan Anda dengan mudah</p>
+                <p className="text-gray-600">Ubah teks, foto, dan musik sesuai keinginan Anda dengan mudah</p>
               </div>
 
               <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
@@ -377,15 +439,15 @@ function App() {
         <AuthModal onClose={() => setShowAuthModal(false)} />
       )}
 
-      {/* Purchase Notification */}
-      {purchaseNotification && (
+      {/* Notification */}
+      {notification && (
         <div className={`fixed top-20 right-4 z-50 px-6 py-4 rounded-2xl shadow-2xl animate-slideIn max-w-md ${
-          purchaseNotification.type === 'success' 
+          notification.type === 'success' 
             ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
             : 'bg-gradient-to-r from-red-500 to-pink-500'
         } text-white`}>
           <div className="flex items-start space-x-3">
-            {purchaseNotification.type === 'success' ? (
+            {notification.type === 'success' ? (
               <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -396,12 +458,12 @@ function App() {
             )}
             <div className="flex-1">
               <p className="font-semibold mb-1">
-                {purchaseNotification.type === 'success' ? 'Berhasil!' : 'Gagal'}
+                {notification.type === 'success' ? 'Berhasil!' : 'Gagal'}
               </p>
-              <p className="text-sm opacity-90">{purchaseNotification.message}</p>
+              <p className="text-sm opacity-90">{notification.message}</p>
             </div>
             <button
-              onClick={() => setPurchaseNotification(null)}
+              onClick={() => setNotification(null)}
               className="p-1 hover:bg-white/20 rounded-full transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -412,13 +474,13 @@ function App() {
         </div>
       )}
 
-      {/* Purchase Confirmation Modal */}
-      <PurchaseModal
-        show={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-        onConfirm={confirmPurchase}
+      {/* Create Invitation Confirmation Modal */}
+      <CreateInvitationModal
+        show={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onConfirm={confirmCreateInvitation}
         template={selectedTemplate}
-        loading={purchaseLoading}
+        loading={creationLoading}
       />
 
       {/* Admin Access Button */}
@@ -438,16 +500,11 @@ function App() {
       {/* User Panel Access Button */}
       {user && viewMode === 'home' && (
         <button
-          onClick={() => {
-            setViewMode('user-panel');
-            window.history.pushState({}, '', '/user-panel');
-          }}
+          onClick={handleGoToUserPanel}
           className="fixed bottom-6 right-6 p-4 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-2xl hover:shadow-pink-500/50 hover:scale-110 transition-all z-40 flex items-center space-x-2"
           title="User Panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
+          <UserIcon className="w-6 h-6" />
         </button>
       )}
 

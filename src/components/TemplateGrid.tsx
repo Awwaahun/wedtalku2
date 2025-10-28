@@ -5,11 +5,14 @@ import { Loader2, Package, Search, Filter, Grid3x3, LayoutGrid, Sparkles } from 
 
 interface TemplateGridProps {
   onViewDetails: (template: WeddingTemplate) => void;
-  onPurchase?: (template: WeddingTemplate) => void; // ADD THIS
+  onCreateInvitation?: (template: WeddingTemplate) => void;
   filterCategory?: string;
   showFeaturedOnly?: boolean;
   featuredLayout?: boolean;
-  userPurchases?: string[];
+  createdInvitationIds?: string[];
+  onGoToUserPanel?: () => void;
+  favoriteIds?: string[];
+  onToggleFavorite?: (templateId: string) => void;
 }
 
 type ViewMode = 'grid-3' | 'grid-2';
@@ -17,11 +20,14 @@ type SortOption = 'newest' | 'popular' | 'price-low' | 'price-high';
 
 export default function TemplateGrid({ 
   onViewDetails, 
-  onPurchase,
+  onCreateInvitation,
   filterCategory, 
   showFeaturedOnly, 
   featuredLayout,
-  userPurchases = [] 
+  createdInvitationIds,
+  onGoToUserPanel,
+  favoriteIds,
+  onToggleFavorite,
 }: TemplateGridProps) {
   const [templates, setTemplates] = useState<WeddingTemplate[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<WeddingTemplate[]>([]);
@@ -132,9 +138,6 @@ export default function TemplateGrid({
     );
   }
 
-  // Responsive grid classes
-  // Featured: 1 col mobile, 2 cols tablet, 3 cols desktop
-  // Regular: 2 cols mobile, 2-3 cols based on viewMode
   const gridClass = featuredLayout 
     ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
     : viewMode === 'grid-3' 
@@ -147,7 +150,6 @@ export default function TemplateGrid({
       {!featuredLayout && (
         <div className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white via-purple-50/30 to-cyan-50/30 border border-purple-100/50 shadow-lg backdrop-blur-sm animate-fadeIn">
           
-          {/* Search Bar - Full Width on Mobile */}
           <div className="relative w-full group">
             <Search className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${
               isSearching ? 'text-purple-500 scale-110' : 'text-gray-400'
@@ -169,10 +171,8 @@ export default function TemplateGrid({
             )}
           </div>
 
-          {/* Filters Row - Stack on Mobile */}
           <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 sm:gap-3">
             
-            {/* Sort Dropdown - Full Width on Mobile */}
             <div className="relative flex-1 group">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400 group-hover:text-purple-500 transition-colors pointer-events-none" />
               <select
@@ -192,7 +192,6 @@ export default function TemplateGrid({
               </div>
             </div>
 
-            {/* View Mode Toggle */}
             <div className="flex items-center justify-center xs:justify-start gap-1 sm:gap-2 p-1 rounded-lg sm:rounded-xl bg-white/80 backdrop-blur-sm border-2 border-gray-200">
               <button
                 onClick={() => setViewMode('grid-3')}
@@ -221,7 +220,6 @@ export default function TemplateGrid({
         </div>
       )}
 
-      {/* Results Info - Mobile Optimized - Hide for Featured Layout */}
       {!featuredLayout && (
         <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 sm:gap-0 px-2 animate-fadeIn">
           <div className="flex items-center space-x-2">
@@ -239,7 +237,6 @@ export default function TemplateGrid({
         </div>
       )}
 
-      {/* Grid - Responsive */}
       {filteredTemplates.length === 0 ? (
         <div className="text-center py-12 sm:py-20 animate-fadeIn px-4">
           <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-purple-100 to-cyan-100 mb-4 sm:mb-6">
@@ -263,16 +260,18 @@ export default function TemplateGrid({
               key={template.id}
               template={template}
               onViewDetails={onViewDetails}
-              onPurchase={onPurchase}
+              onCreateInvitation={onCreateInvitation}
               index={index}
               viewMode={viewMode}
-              isPurchased={userPurchases.includes(template.id)}
+              createdInvitationIds={createdInvitationIds}
+              onGoToUserPanel={onGoToUserPanel}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </div>
       )}
 
-      {/* Load More Hint - Mobile Optimized */}
       {filteredTemplates.length > 0 && filteredTemplates.length === templates.length && (
         <div className="text-center py-6 sm:py-8 animate-fadeIn">
           <div className="inline-flex items-center space-x-2 px-4 py-2 sm:px-6 sm:py-3 rounded-full bg-gradient-to-r from-purple-50 to-cyan-50 border border-purple-200">
@@ -296,7 +295,6 @@ export default function TemplateGrid({
           animation: fadeIn 0.5s ease-out;
         }
 
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
           width: 8px;
         }
@@ -315,7 +313,6 @@ export default function TemplateGrid({
           background: linear-gradient(to bottom, #9333ea, #0891b2);
         }
 
-        /* Custom breakpoint xs (475px) */
         @media (min-width: 475px) {
           .xs\\:flex-row {
             flex-direction: row;

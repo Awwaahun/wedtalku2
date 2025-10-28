@@ -117,7 +117,7 @@ export default function Hero() {
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight text-gray-800">
               Buat{' '}
               <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent animate-gradient">
-                Website Pernikahan
+                Undangan Digital
               </span>{' '}
               Impianmu
             </h1>

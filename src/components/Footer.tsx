@@ -13,8 +13,8 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-gray-600 mb-4">
-              Platform terpercaya untuk membeli template website pernikahan digital yang elegan dan modern.
-              Wujudkan website impian untuk hari spesial Anda.
+              Platform terpercaya untuk membuat undangan pernikahan digital yang elegan dan modern.
+              Wujudkan undangan impian untuk hari spesial Anda.
             </p>
           </div>
 
@@ -65,7 +65,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-200 mt-8 pt-8 text-center">
           <p className="text-gray-600 text-sm">
-            &copy; 2025 Wedding Market. All rights reserved. Made with{' '}
+            &copy; 2025 WedTalku. All rights reserved. Made with{' '}
             <Heart className="w-4 h-4 inline text-[#f4b9b8]" fill="#f4b9b8" /> for your special day
           </p>
         </div>

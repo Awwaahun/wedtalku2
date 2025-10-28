@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 
 interface NavbarProps {
   onAuthClick: () => void;
-  onCartClick: () => void; // Keep for compatibility but won't use
 }
 
 export default function Navbar({ onAuthClick }: NavbarProps) {
@@ -63,7 +62,6 @@ export default function Navbar({ onAuthClick }: NavbarProps) {
                   className={`w-9 h-9 text-[#f4b9b8] transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 rounded-md ${
                     isScrolled ? 'animate-pulse' : ''
                   }`} 
-                  fill="#f4b9b8" 
                   src="https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761489579724.png"
                   alt="WedTalku Logo"
                 />
@@ -97,9 +95,8 @@ export default function Navbar({ onAuthClick }: NavbarProps) {
               ))}
             </div>
 
-            {/* Right Section - REMOVED CART BUTTON */}
+            {/* Right Section */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* User Section */}
               {user ? (
                 <div className="flex items-center space-x-2 animate-[slideIn_0.3s_ease-out]">
                   <button
