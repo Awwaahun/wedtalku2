@@ -243,132 +243,135 @@ function App() {
     }
   };
 
-  // Admin panel
-  if (viewMode === 'admin') {
-    return <AdminPanel />;
-  }
+  const renderView = () => {
+    // Admin panel
+    if (viewMode === 'admin') {
+      return <AdminPanel />;
+    }
 
-  // User panel
-  if (viewMode === 'user-panel') {
-    return <UserPanel />;
-  }
+    // User panel
+    if (viewMode === 'user-panel') {
+      return <UserPanel />;
+    }
 
-  // Template detail
-  if (viewMode === 'detail' && selectedTemplate) {
-    return (
-      <>
+    // Template detail
+    if (viewMode === 'detail' && selectedTemplate) {
+      return (
         <TemplateDetail
           template={selectedTemplate}
           onClose={handleCloseDetail}
           onPurchase={handlePurchase}
           isPurchased={userPurchases.includes(selectedTemplate.id)}
         />
-        {showAuthModal && (
-          <AuthModal onClose={() => setShowAuthModal(false)} />
-        )}
-      </>
+      );
+    }
+
+    // Home page
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-white via-[#fff4bd]/10 to-[#85d2d0]/10">
+        <Navbar
+          onAuthClick={() => setShowAuthModal(true)}
+          onCartClick={() => {}} // Empty function - cart removed
+        />
+
+        <Hero />
+
+        <section id="featured" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#f4b9b8]/20 to-[#887bb0]/20 mb-4">
+                <Sparkles className="w-5 h-5 text-[#887bb0]" />
+                <span className="text-[#887bb0] font-semibold">Featured Templates</span>
+              </div>
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                Template Pilihan Terbaik
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Koleksi template premium yang paling populer dan banyak dipilih oleh pasangan
+              </p>
+            </div>
+
+            <TemplateGrid
+              onViewDetails={handleViewDetails}
+              onPurchase={handlePurchase}
+              showFeaturedOnly={true}
+              featuredLayout={true}
+              userPurchases={userPurchases}
+            />
+          </div>
+        </section>
+
+        <section id="templates" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                Semua Template
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+                Jelajahi koleksi lengkap template website pernikahan kami
+              </p>
+            </div>
+
+            <CategoryFilter
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+
+            <TemplateGrid
+              onViewDetails={handleViewDetails}
+              onPurchase={handlePurchase}
+              filterCategory={selectedCategory}
+              userPurchases={userPurchases}
+            />
+          </div>
+        </section>
+
+        <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#f4b9b8]/10 via-[#887bb0]/10 to-[#85d2d0]/10">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl font-bold text-gray-800 mb-6">
+              Mengapa Memilih Kami?
+            </h2>
+            <p className="text-lg text-gray-600 mb-12">
+              Kami menyediakan template website pernikahan berkualitas tinggi yang mudah dikustomisasi
+              dan siap pakai untuk hari spesial Anda.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Desain Premium</h3>
+                <p className="text-gray-600">Template dirancang oleh desainer profesional dengan standar tertinggi</p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#887bb0] to-[#85d2d0] flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Mudah Dikustomisasi</h3>
+                <p className="text-gray-600">Ubah teks, foto, dan warna sesuai keinginan Anda dengan mudah</p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#85d2d0] to-[#fff4bd] flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-gray-800" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Support 24/7</h3>
+                <p className="text-gray-600">Tim support kami siap membantu Anda kapan saja</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <Footer />
+      </div>
     );
-  }
+  };
 
-  // Home page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-[#fff4bd]/10 to-[#85d2d0]/10">
-      <Navbar
-        onAuthClick={() => setShowAuthModal(true)}
-        onCartClick={() => {}} // Empty function - cart removed
-      />
-
-      <Hero />
-
-      <section id="featured" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#f4b9b8]/20 to-[#887bb0]/20 mb-4">
-              <Sparkles className="w-5 h-5 text-[#887bb0]" />
-              <span className="text-[#887bb0] font-semibold">Featured Templates</span>
-            </div>
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              Template Pilihan Terbaik
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Koleksi template premium yang paling populer dan banyak dipilih oleh pasangan
-            </p>
-          </div>
-
-          <TemplateGrid
-            onViewDetails={handleViewDetails}
-            onPurchase={handlePurchase}
-            showFeaturedOnly={true}
-            featuredLayout={true}
-            userPurchases={userPurchases}
-          />
-        </div>
-      </section>
-
-      <section id="templates" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              Semua Template
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-              Jelajahi koleksi lengkap template website pernikahan kami
-            </p>
-          </div>
-
-          <CategoryFilter
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-
-          <TemplateGrid
-            onViewDetails={handleViewDetails}
-            onPurchase={handlePurchase}
-            filterCategory={selectedCategory}
-            userPurchases={userPurchases}
-          />
-        </div>
-      </section>
-
-      <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#f4b9b8]/10 via-[#887bb0]/10 to-[#85d2d0]/10">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-800 mb-6">
-            Mengapa Memilih Kami?
-          </h2>
-          <p className="text-lg text-gray-600 mb-12">
-            Kami menyediakan template website pernikahan berkualitas tinggi yang mudah dikustomisasi
-            dan siap pakai untuk hari spesial Anda.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#f4b9b8] to-[#887bb0] flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Desain Premium</h3>
-              <p className="text-gray-600">Template dirancang oleh desainer profesional dengan standar tertinggi</p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#887bb0] to-[#85d2d0] flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Mudah Dikustomisasi</h3>
-              <p className="text-gray-600">Ubah teks, foto, dan warna sesuai keinginan Anda dengan mudah</p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-[#85d2d0] to-[#fff4bd] flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-gray-800" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Support 24/7</h3>
-              <p className="text-gray-600">Tim support kami siap membantu Anda kapan saja</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Footer />
+    <>
+      {renderView()}
 
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
@@ -492,7 +495,7 @@ function App() {
           animation: scaleIn 0.3s ease-out;
         }
       `}</style>
-    </div>
+    </>
   );
 }
 

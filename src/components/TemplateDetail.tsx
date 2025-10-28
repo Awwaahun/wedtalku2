@@ -194,16 +194,6 @@ export default function TemplateDetail({ template, onClose, onPurchase, isPurcha
                 </div>
               )}
 
-              {/* Purchased Badge */}
-              {isPurchased && (
-                <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
-                  <div className="px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center space-x-1 shadow-lg">
-                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span>Dibeli</span>
-                  </div>
-                </div>
-              )}
-
               {/* Views Counter */}
               <div className="absolute top-3 right-3 sm:top-4 sm:right-4 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-xs sm:text-sm font-medium flex items-center space-x-1">
                 <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
