@@ -5,13 +5,12 @@ import { useState } from 'react';
 interface TemplateCardProps {
   template: WeddingTemplate;
   onViewDetails: (template: WeddingTemplate) => void;
-  onPurchase: (template: WeddingTemplate) => void;
   index?: number;
   viewMode?: 'grid-3' | 'grid-2';
   isPurchased?: boolean;
 }
 
-export default function TemplateCard({ template, onViewDetails, onPurchase, index = 0, viewMode = 'grid-3', isPurchased = false }: TemplateCardProps) {
+export default function TemplateCard({ template, onViewDetails, index = 0, viewMode = 'grid-3', isPurchased = false }: TemplateCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -55,19 +54,6 @@ export default function TemplateCard({ template, onViewDetails, onPurchase, inde
       },
     };
     return configs[category as keyof typeof configs] || configs.modern;
-  };
-  
-  const handlePurchase = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('🛒 Purchase button clicked for:', template.title);
-    console.log('🔍 onPurchase function exists?', !!onPurchase);
-    
-    if (onPurchase) {
-      console.log('✅ Calling onPurchase...');
-      onPurchase(template);
-    } else {
-      console.error('❌ onPurchase is undefined!');
-    }
   };
 
   const categoryConfig = getCategoryConfig(template.category);
@@ -221,28 +207,6 @@ export default function TemplateCard({ template, onViewDetails, onPurchase, inde
               </div>
             </div>
             
-            <button
-              onClick={isPurchased ? () => onViewDetails(template) : handlePurchase}
-              className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0 ${isPurchased ? 'opacity-75' : ''}`}
-            >
-              <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                {isPurchased ? (
-                  <>
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span className="text-xs sm:text-sm">Lihat</span>
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:rotate-12 transition-transform duration-300" />
-                    <span className="text-xs sm:text-sm">Beli</span>
-                  </>
-                )}
-              </span>
-              <div className="absolute inset-0 bg-white opacity-0 group-hover/cta:opacity-20 transition-opacity duration-300" />
-            </button>
           </div>
         </div>
       </div>
