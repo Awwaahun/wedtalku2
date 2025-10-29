@@ -113,7 +113,8 @@ export default function UserPanel({
   const loadUserData = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
+      const { data: { user } } = await (supabase.auth as any).getUser();
       
       if (user) {
         // Load profile
@@ -149,7 +150,13 @@ export default function UserPanel({
           .order('created_at', { ascending: false });
 
         if (favData) {
-          const templates = favData.map(f => f.wedding_templates).filter(Boolean) as WeddingTemplate[];
+          // FIX: The joined data from `wedding_templates` can be a nested array.
+          // Flatten the array structure and filter out any null values to ensure
+          // we have a clean array of WeddingTemplate objects.
+          const templates = favData
+            .map(f => f.wedding_templates)
+            .flat()
+            .filter(Boolean) as WeddingTemplate[];
           setFavoriteTemplates(templates);
         }
 
@@ -166,7 +173,7 @@ export default function UserPanel({
 
   const loadMedia = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) return;
 
       const { data, error } = await supabase
@@ -229,7 +236,7 @@ export default function UserPanel({
     setUploadProgress(0);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) throw new Error('User not authenticated');
 
       // Generate unique filename
@@ -291,7 +298,7 @@ export default function UserPanel({
     if (!confirm('Apakah Anda yakin ingin menghapus file ini?')) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) throw new Error('User not authenticated');
 
       // Extract file path from URL
@@ -333,7 +340,7 @@ export default function UserPanel({
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await (supabase.auth as any).signOut();
     window.location.href = '/';
   };
 

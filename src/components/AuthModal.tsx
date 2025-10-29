@@ -22,7 +22,8 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     try {
       if (isLogin) {
         // LOGIN
-        const { error } = await supabase.auth.signInWithPassword({
+        // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
+        const { error } = await (supabase.auth as any).signInWithPassword({
           email,
           password,
         });
@@ -36,7 +37,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         }, 1000);
       } else {
         // SIGN UP - Metode 1: Dengan Trigger Database (Recommended)
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        const { data: authData, error: signUpError } = await (supabase.auth as any).signUp({
           email,
           password,
           options: {

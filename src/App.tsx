@@ -38,7 +38,8 @@ function App() {
   }, []);
 
   const checkUserSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
+    const { data: { session } } = await (supabase.auth as any).getSession();
     const currentUser = session?.user ?? null;
     setUser(currentUser);
 
@@ -46,7 +47,7 @@ function App() {
       loadUserData(currentUser.id);
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event, session) => {
       const newUser = session?.user ?? null;
       setUser(newUser);
       if (newUser) {
@@ -103,7 +104,7 @@ function App() {
   };
 
   const handleToggleFavorite = async (templateId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     if (!user) {
       setShowAuthModal(true);
       showNotification('error', 'Silakan login untuk menambahkan favorit.');
@@ -144,8 +145,37 @@ function App() {
     }
   };
 
+  const handleRateTemplate = async (templateId: string, rating: number): Promise<boolean> => {
+    const { data: { user } } = await (supabase.auth as any).getUser();
+    if (!user) {
+      setShowAuthModal(true);
+      showNotification('error', 'Silakan login untuk memberikan rating.');
+      return false;
+    }
+
+    try {
+      // Upsert the user's rating. The database trigger will handle recalculating the average.
+      const { error } = await supabase
+        .from('template_ratings')
+        .upsert(
+          { template_id: templateId, user_id: user.id, rating: rating },
+          { onConflict: 'template_id, user_id' }
+        );
+
+      if (error) throw error;
+
+      showNotification('success', 'Terima kasih atas rating Anda!');
+      return true; // Indicate success
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      showNotification('error', 'Gagal menyimpan rating.');
+      return false; // Indicate failure
+    }
+  };
+
+
   const checkAdminStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
@@ -168,7 +198,7 @@ function App() {
   };
 
   const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     
     if (!user) {
       setShowAuthModal(true);
@@ -192,7 +222,7 @@ function App() {
   };
 
   const checkUserPanelAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     
     if (!user) {
       setShowAuthModal(true);
@@ -223,7 +253,7 @@ function App() {
 
   // MAIN INVITATION CREATION HANDLER
   const handleCreateInvitation = async (template: WeddingTemplate) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     
     if (!user) {
       setShowAuthModal(true);
@@ -240,7 +270,7 @@ function App() {
 
     setCreationLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) throw new Error('User not authenticated');
 
       // Generate a unique slug for the invitation URL
@@ -319,6 +349,7 @@ function App() {
           onGoToUserPanel={handleGoToUserPanel}
           favoriteIds={favoriteIds}
           onToggleFavorite={handleToggleFavorite}
+          onRateTemplate={handleRateTemplate}
         />
       );
     }

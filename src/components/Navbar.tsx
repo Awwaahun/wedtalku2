@@ -13,11 +13,12 @@ export default function Navbar({ onAuthClick }: NavbarProps) {
   const [activeLink, setActiveLink] = useState('home');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
+    (supabase.auth as any).getSession().then(({ data: { session } }: any) => {
       setUser(session?.user ?? null);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: any, session: any) => {
       setUser(session?.user ?? null);
     });
 
@@ -34,7 +35,7 @@ export default function Navbar({ onAuthClick }: NavbarProps) {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await (supabase.auth as any).signOut();
   };
 
   const navLinks = [

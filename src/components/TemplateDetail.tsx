@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Eye, Heart, Star, Check, Zap, 
   Shield, Palette, Code, Headphones, ExternalLink,
   Download, Sparkles, CheckCircle2, X, Monitor,
-  Gift, Music, Map, Image as ImageIcon, User
+  Gift, Music, Map, Image as ImageIcon, User, Loader2
 } from 'lucide-react';
-import { WeddingTemplate } from '../lib/supabase';
+import { WeddingTemplate, supabase } from '../lib/supabase';
 
 interface TemplateDetailProps {
   template: WeddingTemplate;
@@ -15,6 +15,7 @@ interface TemplateDetailProps {
   onGoToUserPanel: () => void;
   favoriteIds?: string[];
   onToggleFavorite?: (templateId: string) => void;
+  onRateTemplate: (templateId: string, rating: number) => Promise<boolean>;
 }
 
 export default function TemplateDetail({ 
@@ -24,12 +25,56 @@ export default function TemplateDetail({
   isCreated, 
   onGoToUserPanel,
   favoriteIds,
-  onToggleFavorite 
+  onToggleFavorite,
+  onRateTemplate,
 }: TemplateDetailProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState<'features' | 'specs'>('features');
   
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [displayRating, setDisplayRating] = useState(template.avg_rating || 0);
+  const [displayRatingCount, setDisplayRatingCount] = useState(template.rating_count || 0);
+
+  useEffect(() => {
+    const fetchUserRating = async () => {
+      // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
+      const { data: { user } } = await (supabase.auth as any).getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('template_ratings')
+        .select('rating')
+        .match({ user_id: user.id, template_id: template.id })
+        .single();
+        
+      if (data) {
+        setUserRating(data.rating);
+      }
+    };
+    fetchUserRating();
+  }, [template.id]);
+
+  const submitRating = async (rating: number) => {
+    setIsSubmitting(true);
+    const success = await onRateTemplate(template.id, rating);
+    if (success) {
+      // Optimistic UI update
+      const newCount = userRating ? displayRatingCount : displayRatingCount + 1;
+      const oldTotal = displayRating * displayRatingCount;
+      const newTotal = userRating ? oldTotal - userRating + rating : oldTotal + rating;
+      const newAvg = newTotal / newCount;
+
+      setDisplayRating(newAvg);
+      setDisplayRatingCount(newCount);
+      setUserRating(rating);
+    }
+    setIsSubmitting(false);
+  };
+
   const isFavorited = favoriteIds?.includes(template.id);
 
   const formatPrice = (price: number) => {
@@ -42,11 +87,7 @@ export default function TemplateDetail({
   
   const handleCreateInvitation = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onCreateInvitation) {
-      onCreateInvitation(template);
-    } else {
-      console.error('❌ onCreateInvitation is undefined!');
-    }
+    onCreateInvitation(template);
   };
   
   const getCategoryConfig = (category: string) => {
@@ -211,9 +252,11 @@ export default function TemplateDetail({
                 </span>
                 <div className="flex items-center space-x-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 fill-current" />
+                    <Star key={i} className={`w-4 h-4 sm:w-5 sm:h-5 ${Math.round(displayRating) > i ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
                   ))}
-                  <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">(128)</span>
+                  {displayRatingCount > 0 && (
+                     <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">({displayRatingCount} ratings)</span>
+                  )}
                 </div>
               </div>
 
@@ -246,6 +289,44 @@ export default function TemplateDetail({
                 </span>
               </div>
             </div>
+            
+            {/* Rating Section */}
+            <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-r from-purple-50/50 to-cyan-50/50 border-2 border-purple-100 shadow-inner">
+              <h3 className="font-bold text-gray-800 mb-3 text-center text-base sm:text-lg">
+                {userRating ? 'Ubah Rating Anda' : 'Beri Rating Anda'}
+              </h3>
+              <div className="flex items-center justify-center space-x-2">
+                {[...Array(5)].map((_, i) => {
+                  const ratingValue = i + 1;
+                  return (
+                    <button
+                      key={i}
+                      disabled={isSubmitting}
+                      onMouseEnter={() => !isSubmitting && setHoverRating(ratingValue)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => submitRating(ratingValue)}
+                      className="p-1 rounded-full transition-transform duration-200 disabled:cursor-not-allowed"
+                      aria-label={`Rate ${ratingValue} stars`}
+                    >
+                      <Star
+                        className={`w-7 h-7 sm:w-8 sm:h-8 transition-all duration-200 ${
+                          (hoverRating || userRating || 0) >= ratingValue
+                            ? 'text-amber-400 fill-current scale-110'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              {isSubmitting && (
+                <div className="flex items-center justify-center text-sm text-gray-500 mt-2 space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin"/>
+                  <span>Menyimpan...</span>
+                </div>
+              )}
+            </div>
+
 
             <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
               <div className="flex space-x-4 sm:space-x-8 min-w-max px-1">

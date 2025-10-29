@@ -20,6 +20,8 @@ export interface WeddingTemplate {
   views_count: number;
   created_at: string;
   updated_at: string;
+  avg_rating: number;
+  rating_count: number;
 }
 
 export interface Profile {

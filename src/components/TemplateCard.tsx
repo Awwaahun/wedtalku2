@@ -14,6 +14,36 @@ interface TemplateCardProps {
   onToggleFavorite?: (templateId: string) => void;
 }
 
+const RatingDisplay = ({ rating, count }: { rating: number; count: number }) => {
+  const fullStars = Math.round(rating);
+  const emptyStars = 5 - fullStars;
+
+  if (count === 0) {
+    return (
+      <div className="flex items-center">
+        {[...Array(5)].map((_, i) => (
+          <Star key={`empty-${i}`} className="w-3 h-3 text-gray-300" />
+        ))}
+         <span className="text-xs text-gray-400 font-medium ml-1">Baru</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center space-x-1">
+      <div className="flex items-center">
+        {[...Array(fullStars)].map((_, i) => (
+          <Star key={`full-${i}`} className="w-3 h-3 text-amber-400 fill-current" />
+        ))}
+        {[...Array(emptyStars)].map((_, i) => (
+          <Star key={`empty-${i}`} className="w-3 h-3 text-amber-200 fill-current" />
+        ))}
+      </div>
+      <span className="text-xs text-gray-500 font-medium">({count})</span>
+    </div>
+  );
+};
+
 export default function TemplateCard({ 
   template, 
   onViewDetails, 
@@ -72,15 +102,6 @@ export default function TemplateCard({
     return configs[category as keyof typeof configs] || configs.modern;
   };
   
-  const handleCreateInvitation = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onCreateInvitation) {
-      onCreateInvitation(template);
-    } else {
-      console.error('❌ onCreateInvitation is undefined!');
-    }
-  };
-
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite?.(template.id);
@@ -197,11 +218,7 @@ export default function TemplateCard({
               <span>{template.category.charAt(0).toUpperCase() + template.category.slice(1)}</span>
             </span>
             
-            <div className="flex space-x-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-current" />
-              ))}
-            </div>
+            <RatingDisplay rating={template.avg_rating || 0} count={template.rating_count || 0} />
           </div>
 
           <h3 className={`${titleSize} font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300 line-clamp-2`}>
@@ -239,29 +256,16 @@ export default function TemplateCard({
               </div>
             </div>
             
-            {isCreated ? (
-              <button
-                onClick={onGoToUserPanel}
-                className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-cyan-500/50 flex-shrink-0`}
-              >
-                <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                  <User className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:-translate-y-0.5 transition-transform duration-300" />
-                  <span className="text-xs sm:text-sm">Cek Panel</span>
-                </span>
-                <div className="absolute inset-0 bg-white opacity-0 group-hover/cta:opacity-20 transition-opacity duration-300" />
-              </button>
-            ) : (
-              <button
-                onClick={handleCreateInvitation}
-                className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0`}
-              >
-                <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                  <Edit className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:rotate-12 transition-transform duration-300" />
-                  <span className="text-xs sm:text-sm">Gunakan</span>
-                </span>
-                <div className="absolute inset-0 bg-white opacity-0 group-hover/cta:opacity-20 transition-opacity duration-300" />
-              </button>
-            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewDetails(template); }}
+              className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0`}
+            >
+              <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
+                <Eye className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:rotate-12 transition-transform duration-300" />
+                <span className="text-xs sm:text-sm">Lihat Detail</span>
+              </span>
+              <div className="absolute inset-0 bg-white opacity-0 group-hover/cta:opacity-20 transition-opacity duration-300" />
+            </button>
           </div>
         </div>
       </div>
