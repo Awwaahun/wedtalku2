@@ -141,12 +141,12 @@ export default function Hero() {
               </a>
 
               <a
-                href="#featured"
+                href="#portfolios"
                 className="px-8 py-4 rounded-full border-2 border-purple-400 text-purple-600 font-semibold transition-all duration-500 hover:bg-purple-500 hover:text-white hover:shadow-lg"
               >
                 <span className="span-hero2 flex items-center gap-2">
-                  Lihat Featured
-                  <Star className="w-5 h-5" />
+                  Lihat Portofolio
+                  <Heart className="w-5 h-5" />
                 </span>
               </a>
             </div>

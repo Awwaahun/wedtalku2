@@ -54,3 +54,59 @@ export interface UserMedia {
   mime_type: string;
   created_at: string;
 }
+
+export interface UserPortfolio {
+  id: string;
+  user_id: string;
+  template_id: string;
+  groom_name: string;
+  bride_name: string;
+  wedding_date?: string;
+  couple_photo_url: string;
+  groom_photo_url?: string;
+  bride_photo_url?: string;
+  story?: string;
+  location?: string;
+  is_published: boolean;
+  is_featured: boolean;
+  views_count: number;
+  likes_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserPortfolio {
+  id: string;
+  user_id: string;
+  template_id: string;
+  groom_name: string;
+  bride_name: string;
+  wedding_date?: string;
+  couple_photo_url: string;
+  groom_photo_url?: string;
+  bride_photo_url?: string;
+  story?: string;
+  location?: string;
+  is_published: boolean;
+  is_featured: boolean;
+  views_count: number;
+  likes_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PortfolioWithUser extends UserPortfolio {
+  user_name: string;
+  user_email: string;
+  template_title: string;
+  template_thumbnail: string;
+  template_category: 'modern' | 'classic' | 'minimalist' | 'elegant';
+  total_likes: number;
+}
+
+export interface PortfolioLike {
+    id: string;
+    portfolio_id: string;
+    user_id: string;
+    created_at: string;
+}

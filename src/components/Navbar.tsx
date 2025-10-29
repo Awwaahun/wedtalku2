@@ -42,6 +42,7 @@ export default function Navbar({ onAuthClick }: NavbarProps) {
     { id: 'home', label: 'Home', href: '#home' },
     { id: 'templates', label: 'Templates', href: '#templates' },
     { id: 'featured', label: 'Featured', href: '#featured' },
+    { id: 'portfolios', label: 'Portofolio', href: '#portfolios' },
     { id: 'about', label: 'Tentang', href: '#about' },
   ];
 

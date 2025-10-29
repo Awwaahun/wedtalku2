@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, Heart, Sparkles, Star, Zap, Edit, User, CheckCircle2 } from 'lucide-react';
+import { Eye, Heart, Sparkles, Star, Zap, Edit, User, CheckCircle2, BookOpen } from 'lucide-react';
 import { WeddingTemplate } from '../lib/supabase';
 
 interface TemplateCardProps {
@@ -201,9 +201,17 @@ export default function TemplateCard({
               </div>
             </div>
           ) : (
-            <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/30 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
-              <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-              <span className="hidden xs:inline">{template.views_count.toLocaleString()}</span>
+            <div className="flex flex-col items-end gap-2">
+              <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/30 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
+                <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                <span className="hidden xs:inline">{template.views_count.toLocaleString()}</span>
+              </div>
+               {(template.portfolio_count || 0) > 0 && (
+                <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/30 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
+                  <BookOpen className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span className="hidden xs:inline">{template.portfolio_count} Portofolio</span>
+                </div>
+              )}
             </div>
           )}
         </div>

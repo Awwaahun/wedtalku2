@@ -39,40 +39,149 @@ export default function TemplateDetail({
   const [displayRating, setDisplayRating] = useState(template.avg_rating || 0);
   const [displayRatingCount, setDisplayRatingCount] = useState(template.rating_count || 0);
 
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+
   useEffect(() => {
     const fetchUserRating = async () => {
-      // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await (supabase.auth as any).getUser();
+        if (!user) return;
 
-      const { data } = await supabase
-        .from('template_ratings')
-        .select('rating')
-        .match({ user_id: user.id, template_id: template.id })
-        .single();
-        
-      if (data) {
-        setUserRating(data.rating);
+        const { data, error } = await supabase
+          .from('template_ratings')
+          .select('rating')
+          .match({ user_id: user.id, template_id: template.id })
+          .single();
+          
+        if (error) {
+          // User belum pernah rating, bukan error sebenarnya
+          if (error.code !== 'PGRST116') {
+            console.error('Error fetching user rating:', error);
+          }
+          return;
+        }
+
+        if (data) {
+          setUserRating(data.rating);
+          console.log('User existing rating loaded:', data.rating);
+        }
+      } catch (error) {
+        console.error('Error in fetchUserRating:', error);
       }
     };
+    
     fetchUserRating();
   }, [template.id]);
 
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const submitRating = async (rating: number) => {
     setIsSubmitting(true);
-    const success = await onRateTemplate(template.id, rating);
-    if (success) {
+    
+    try {
+      const { data: { user } } = await (supabase.auth as any).getUser();
+      
+      if (!user) {
+        showNotification('error', 'Silakan login terlebih dahulu');
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Submitting rating:', { user_id: user.id, template_id: template.id, rating });
+
+      // Coba insert atau update dengan upsert
+      const { data, error } = await supabase
+        .from('template_ratings')
+        .upsert(
+          { 
+            template_id: template.id, 
+            user_id: user.id, 
+            rating: rating 
+          },
+          { 
+            onConflict: 'template_id,user_id',
+            ignoreDuplicates: false 
+          }
+        )
+        .select();
+
+      if (error) {
+        console.error('Rating error:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      console.log('Rating submitted successfully:', data);
+
       // Optimistic UI update
-      const newCount = userRating ? displayRatingCount : displayRatingCount + 1;
+      const isUpdating = userRating !== null;
+      const newCount = isUpdating ? displayRatingCount : displayRatingCount + 1;
       const oldTotal = displayRating * displayRatingCount;
-      const newTotal = userRating ? oldTotal - userRating + rating : oldTotal + rating;
-      const newAvg = newTotal / newCount;
+      const newTotal = isUpdating ? oldTotal - userRating + rating : oldTotal + rating;
+      const newAvg = newCount > 0 ? newTotal / newCount : 0;
 
       setDisplayRating(newAvg);
       setDisplayRatingCount(newCount);
       setUserRating(rating);
+
+      showNotification('success', isUpdating ? 'Rating Anda berhasil diperbarui!' : 'Terima kasih atas rating Anda!');
+
+      // Fetch updated data from server untuk memastikan sinkron
+      setTimeout(async () => {
+        try {
+          const { data: templateData, error: fetchError } = await supabase
+            .from('wedding_templates')
+            .select('avg_rating, rating_count')
+            .eq('id', template.id)
+            .single();
+          
+          if (fetchError) {
+            console.error('Error fetching updated template:', fetchError);
+            return;
+          }
+
+          if (templateData) {
+            setDisplayRating(templateData.avg_rating || 0);
+            setDisplayRatingCount(templateData.rating_count || 0);
+            console.log('Server sync completed:', templateData);
+          }
+        } catch (error) {
+          console.error('Error syncing with server:', error);
+        }
+      }, 1500);
+      
+    } catch (error: any) {
+      console.error('Error submitting rating:', error);
+      
+      // Handle specific error messages
+      let errorMessage = 'Gagal menyimpan rating. ';
+      
+      if (error.message?.includes('permission')) {
+        errorMessage += 'Anda tidak memiliki izin. Coba login ulang.';
+      } else if (error.message?.includes('duplicate')) {
+        errorMessage += 'Rating sudah ada. Silakan refresh halaman.';
+      } else if (error.code === '23503') {
+        errorMessage += 'Template tidak ditemukan.';
+      } else if (error.code === '42501') {
+        errorMessage += 'Akses ditolak. Silakan login ulang.';
+      } else if (error.code === 'PGRST') {
+        errorMessage += 'Terjadi kesalahan server. Silakan coba lagi.';
+      } else {
+        errorMessage += error.message || 'Terjadi kesalahan tidak terduga.';
+      }
+      
+      showNotification('error', errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const isFavorited = favoriteIds?.includes(template.id);
@@ -140,6 +249,16 @@ export default function TemplateDetail({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-20 right-4 z-[60] px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3 animate-slideIn max-w-md ${
+          notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`}>
+          {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <X className="w-5 h-5 flex-shrink-0" />}
+          <span className="font-medium">{notification.message}</span>
+        </div>
+      )}
+
       {/* Header - Mobile Optimized */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 sm:py-4">
@@ -305,7 +424,7 @@ export default function TemplateDetail({
                       onMouseEnter={() => !isSubmitting && setHoverRating(ratingValue)}
                       onMouseLeave={() => setHoverRating(0)}
                       onClick={() => submitRating(ratingValue)}
-                      className="p-1 rounded-full transition-transform duration-200 disabled:cursor-not-allowed"
+                      className="p-1 rounded-full transition-transform duration-200 disabled:cursor-not-allowed hover:scale-110 disabled:hover:scale-100"
                       aria-label={`Rate ${ratingValue} stars`}
                     >
                       <Star
@@ -322,11 +441,15 @@ export default function TemplateDetail({
               {isSubmitting && (
                 <div className="flex items-center justify-center text-sm text-gray-500 mt-2 space-x-2">
                   <Loader2 className="w-4 h-4 animate-spin"/>
-                  <span>Menyimpan...</span>
+                  <span>Menyimpan rating...</span>
                 </div>
               )}
+              {userRating && !isSubmitting && (
+                <p className="text-center text-xs text-gray-600 mt-2">
+                  Rating Anda saat ini: {userRating} ⭐
+                </p>
+              )}
             </div>
-
 
             <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
               <div className="flex space-x-4 sm:space-x-8 min-w-max px-1">
@@ -461,8 +584,15 @@ export default function TemplateDetail({
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out;
+        }
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
         }
         .scrollbar-hide::-webkit-scrollbar {
           display: none;

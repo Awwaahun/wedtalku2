@@ -9,9 +9,12 @@ import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import UserPanel from './components/UserPanel';
 import CreateInvitationModal from './components/PurchaseModal'; // Renamed for clarity
-import { WeddingTemplate } from './lib/supabase';
+import { WeddingTemplate, PortfolioWithUser } from './lib/supabase';
 import { supabase } from './lib/supabase';
-import { Sparkles, User as UserIcon } from 'lucide-react';
+import { Camera, Sparkles, User as UserIcon } from 'lucide-react';
+import PortfolioGallery from './components/PortfolioGallery';
+import PortfolioDetailModal from './components/PortfolioDetailModal';
+
 
 type ViewMode = 'home' | 'detail' | 'admin' | 'user-panel';
 
@@ -26,6 +29,13 @@ function App() {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creationLoading, setCreationLoading] = useState(false);
+  
+  // Portfolio States
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+  const [selectedPortfolio, setSelectedPortfolio] = useState<PortfolioWithUser | null>(null);
+  const [likedPortfolioIds, setLikedPortfolioIds] = useState<string[]>([]);
+
+
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -55,6 +65,7 @@ function App() {
       } else {
         setCreatedInvitationIds([]);
         setFavoriteIds([]);
+        setLikedPortfolioIds([]);
       }
     });
 
@@ -64,6 +75,7 @@ function App() {
   const loadUserData = (userId: string) => {
     loadUserInvitations(userId);
     loadUserFavorites(userId);
+    loadUserPortfolioLikes(userId);
   };
 
   const loadUserInvitations = async (userId: string) => {
@@ -95,6 +107,19 @@ function App() {
       setFavoriteIds(favIds);
     } catch (error) {
       console.error('Error loading favorites:', error);
+    }
+  };
+
+  const loadUserPortfolioLikes = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('portfolio_likes')
+        .select('portfolio_id')
+        .eq('user_id', userId);
+      if (error) throw error;
+      setLikedPortfolioIds(data.map(l => l.portfolio_id));
+    } catch (error) {
+      console.error('Error loading portfolio likes:', error);
     }
   };
   
@@ -145,33 +170,56 @@ function App() {
     }
   };
 
-  const handleRateTemplate = async (templateId: string, rating: number): Promise<boolean> => {
-    const { data: { user } } = await (supabase.auth as any).getUser();
-    if (!user) {
-      setShowAuthModal(true);
-      showNotification('error', 'Silakan login untuk memberikan rating.');
-      return false;
+const handleRateTemplate = async (templateId: string, rating: number): Promise<boolean> => {
+  const { data: { user } } = await (supabase.auth as any).getUser();
+  if (!user) {
+    setShowAuthModal(true);
+    showNotification('error', 'Silakan login untuk memberikan rating.');
+    return false;
+  }
+
+  try {
+    console.log('handleRateTemplate called:', { templateId, rating, userId: user.id });
+
+    // Upsert the user's rating
+    const { data, error } = await supabase
+      .from('template_ratings')
+      .upsert(
+        { 
+          template_id: templateId, 
+          user_id: user.id, 
+          rating: rating 
+        },
+        { 
+          onConflict: 'template_id,user_id',
+          ignoreDuplicates: false 
+        }
+      )
+      .select();
+
+    if (error) {
+      console.error('handleRateTemplate error:', error);
+      throw error;
     }
 
-    try {
-      // Upsert the user's rating. The database trigger will handle recalculating the average.
-      const { error } = await supabase
-        .from('template_ratings')
-        .upsert(
-          { template_id: templateId, user_id: user.id, rating: rating },
-          { onConflict: 'template_id, user_id' }
-        );
-
-      if (error) throw error;
-
-      showNotification('success', 'Terima kasih atas rating Anda!');
-      return true; // Indicate success
-    } catch (error) {
-      console.error('Error submitting rating:', error);
-      showNotification('error', 'Gagal menyimpan rating.');
-      return false; // Indicate failure
-    }
-  };
+    console.log('Rating saved successfully:', data);
+    return true;
+    
+  } catch (error: any) {
+    console.error('Error in handleRateTemplate:', error);
+    
+    // More detailed error logging
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    
+    showNotification('error', 'Gagal menyimpan rating: ' + (error.message || 'Unknown error'));
+    return false;
+  }
+};
 
 
   const checkAdminStatus = async () => {
@@ -314,6 +362,70 @@ function App() {
     }
   };
 
+    // --- PORTFOLIO HANDLERS ---
+  const handleViewPortfolio = (portfolio: PortfolioWithUser) => {
+    setSelectedPortfolio(portfolio);
+    setShowPortfolioModal(true);
+  };
+
+  const handleClosePortfolio = () => {
+    setSelectedPortfolio(null);
+    setShowPortfolioModal(false);
+  };
+
+  const handleTogglePortfolioLike = async (portfolioId: string) => {
+    if (!user) {
+      setShowAuthModal(true);
+      showNotification('error', 'Silakan login untuk menyukai portofolio.');
+      return;
+    }
+
+    const isLiked = likedPortfolioIds.includes(portfolioId);
+
+    // Optimistic update
+    if (isLiked) {
+      setLikedPortfolioIds(prev => prev.filter(id => id !== portfolioId));
+      if (selectedPortfolio?.id === portfolioId) {
+        setSelectedPortfolio(p => p ? { ...p, likes_count: p.likes_count - 1 } : null);
+      }
+    } else {
+      setLikedPortfolioIds(prev => [...prev, portfolioId]);
+      if (selectedPortfolio?.id === portfolioId) {
+        setSelectedPortfolio(p => p ? { ...p, likes_count: p.likes_count + 1 } : null);
+      }
+    }
+
+    try {
+      if (isLiked) {
+        const { error } = await supabase
+          .from('portfolio_likes')
+          .delete()
+          .match({ user_id: user.id, portfolio_id: portfolioId });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('portfolio_likes')
+          .insert({ user_id: user.id, portfolio_id: portfolioId });
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error("Error toggling portfolio like:", error);
+      // Revert on error
+      if (isLiked) {
+        setLikedPortfolioIds(prev => [...prev, portfolioId]);
+         if (selectedPortfolio?.id === portfolioId) {
+          setSelectedPortfolio(p => p ? { ...p, likes_count: p.likes_count + 1 } : null);
+        }
+      } else {
+        setLikedPortfolioIds(prev => prev.filter(id => id !== portfolioId));
+        if (selectedPortfolio?.id === portfolioId) {
+          setSelectedPortfolio(p => p ? { ...p, likes_count: p.likes_count - 1 } : null);
+        }
+      }
+      showNotification('error', 'Gagal memperbarui like.');
+    }
+  };
+
   const renderView = () => {
     // Admin panel
     if (viewMode === 'admin') {
@@ -387,6 +499,28 @@ function App() {
               onGoToUserPanel={handleGoToUserPanel}
               favoriteIds={favoriteIds}
               onToggleFavorite={handleToggleFavorite}
+            />
+          </div>
+        </section>
+
+        <section id="portfolios" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth bg-gradient-to-r from-[#f4b9b8]/10 via-white to-[#85d2d0]/10">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+               <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#fff4bd]/20 mb-4">
+                <Camera className="w-5 h-5 text-[#887bb0]" />
+                <span className="text-[#887bb0] font-semibold">Portfolio Inspirasi</span>
+              </div>
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                Kisah Nyata, Momen Indah
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Lihat bagaimana pasangan lain mewujudkan pernikahan impian mereka dengan template kami.
+              </p>
+            </div>
+            <PortfolioGallery
+              onViewDetails={handleViewPortfolio}
+              onToggleLike={handleTogglePortfolioLike}
+              likedPortfolioIds={likedPortfolioIds}
             />
           </div>
         </section>
@@ -469,6 +603,16 @@ function App() {
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
       )}
+      
+      {showPortfolioModal && selectedPortfolio && (
+        <PortfolioDetailModal
+          portfolio={selectedPortfolio}
+          onClose={handleClosePortfolio}
+          onToggleLike={handleTogglePortfolioLike}
+          isLiked={likedPortfolioIds.includes(selectedPortfolio.id)}
+        />
+      )}
+
 
       {/* Notification */}
       {notification && (

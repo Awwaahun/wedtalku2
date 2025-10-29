@@ -4,12 +4,14 @@ import {
   User, ShoppingBag, Heart, Download, Settings, 
   LogOut, Package, CreditCard, Eye, Calendar,
   ArrowLeft, FileText, Mail, Phone, MapPin,
-  Upload, Image, Video, Music, Trash2, Copy,
+  Upload, Image as ImageIcon, Video, Music, Trash2, Copy,
   CheckCircle, AlertCircle, Loader2, X, ExternalLink,
-  Share, Edit3
+  Share, Edit3, BookOpen
 } from 'lucide-react';
-import { supabase, WeddingTemplate } from '../lib/supabase';
+import { supabase, WeddingTemplate, UserPortfolio, UserMedia } from '../lib/supabase';
 import TemplateCard from './TemplateCard';
+import PortfolioFormModal from './PortfolioFormModal';
+
 
 interface UserProfile {
   id: string;
@@ -33,17 +35,6 @@ interface UserInvitation {
     thumbnail_url: string;
     category: string;
   };
-}
-
-interface UserMedia {
-  id: string;
-  user_id: string;
-  file_name: string;
-  file_url: string;
-  file_type: 'image' | 'video' | 'music';
-  file_size: number;
-  mime_type: string;
-  created_at: string;
 }
 
 interface UserPanelProps {
@@ -70,11 +61,15 @@ export default function UserPanel({
   const [invitations, setInvitations] = useState<UserInvitation[]>([]);
   const [favoriteTemplates, setFavoriteTemplates] = useState<WeddingTemplate[]>([]);
   const [media, setMedia] = useState<UserMedia[]>([]);
+  const [portfolios, setPortfolios] = useState<UserPortfolio[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [mediaFilter, setMediaFilter] = useState<'all' | 'image' | 'video' | 'music'>('all');
+
+  const [showPortfolioForm, setShowPortfolioForm] = useState(false);
+  const [editingInvitation, setEditingInvitation] = useState<UserInvitation | null>(null);
 
   // Helper Functions for Storage Management
   const getStorageLimit = () => {
@@ -160,6 +155,14 @@ export default function UserPanel({
           setFavoriteTemplates(templates);
         }
 
+        // Load portfolios
+        const { data: portfoliosData } = await supabase
+          .from('user_portfolios')
+          .select('*')
+          .eq('user_id', user.id);
+        setPortfolios(portfoliosData || []);
+
+
         // Load media
         await loadMedia();
       }
@@ -170,6 +173,23 @@ export default function UserPanel({
       setLoading(false);
     }
   };
+
+  const handleOpenPortfolioForm = (invitation: UserInvitation) => {
+    setEditingInvitation(invitation);
+    setShowPortfolioForm(true);
+  };
+
+  const handleClosePortfolioForm = () => {
+    setEditingInvitation(null);
+    setShowPortfolioForm(false);
+  };
+
+  const handleSavePortfolio = () => {
+    loadUserData(); // Reload all data to reflect changes
+    handleClosePortfolioForm();
+    showNotification('success', 'Portofolio berhasil disimpan!');
+  };
+
 
   const loadMedia = async () => {
     try {
@@ -362,7 +382,7 @@ export default function UserPanel({
 
   const getMediaIcon = (type: string) => {
     switch(type) {
-      case 'image': return Image;
+      case 'image': return ImageIcon;
       case 'video': return Video;
       case 'music': return Music;
       default: return FileText;
@@ -402,6 +422,16 @@ export default function UserPanel({
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className="font-medium">{notification.message}</span>
         </div>
+      )}
+
+      {showPortfolioForm && editingInvitation && (
+        <PortfolioFormModal
+          invitation={editingInvitation}
+          existingPortfolio={portfolios.find(p => p.template_id === editingInvitation.template_id) || null}
+          userMedia={media.filter(m => m.file_type === 'image')}
+          onClose={handleClosePortfolioForm}
+          onSave={handleSavePortfolio}
+        />
       )}
 
       {/* Header */}
@@ -599,82 +629,85 @@ export default function UserPanel({
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {invitations.map((invitation) => (
-                        <div
-                          key={invitation.id}
-                          className="bg-white rounded-xl border-2 border-gray-200 p-4 transition-all hover:border-purple-300 hover:shadow-lg"
-                        >
-                          <div className="flex flex-col sm:flex-row gap-4">
-                            <img
-                              src={invitation.wedding_templates.thumbnail_url}
-                              alt={invitation.wedding_templates.title}
-                              className="w-full sm:w-40 h-40 object-cover rounded-lg flex-shrink-0"
-                            />
-                            <div className="flex-1 space-y-3">
-                              <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
-                                <div>
-                                  <h3 className="font-bold text-gray-800 text-lg">
-                                    {invitation.wedding_templates.title}
-                                  </h3>
-                                  <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold mt-1">
-                                    {invitation.wedding_templates.category}
+                      {invitations.map((invitation) => {
+                        const portfolio = portfolios.find(p => p.template_id === invitation.template_id);
+                        return (
+                          <div
+                            key={invitation.id}
+                            className="bg-white rounded-xl border-2 border-gray-200 p-4 transition-all hover:border-purple-300 hover:shadow-lg"
+                          >
+                            <div className="flex flex-col sm:flex-row gap-4">
+                              <img
+                                src={invitation.wedding_templates.thumbnail_url}
+                                alt={invitation.wedding_templates.title}
+                                className="w-full sm:w-40 h-40 object-cover rounded-lg flex-shrink-0"
+                              />
+                              <div className="flex-1 space-y-3">
+                                <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                                  <div>
+                                    <h3 className="font-bold text-gray-800 text-lg">
+                                      {invitation.wedding_templates.title}
+                                    </h3>
+                                    <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold mt-1">
+                                      {invitation.wedding_templates.category}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-500 flex items-center space-x-1 flex-shrink-0">
+                                    <Calendar className="w-3 h-3" />
+                                    <span>Dibuat: {formatDate(invitation.purchase_date)}</span>
                                   </span>
                                 </div>
-                                <span className="text-xs text-gray-500 flex items-center space-x-1 flex-shrink-0">
-                                  <Calendar className="w-3 h-3" />
-                                  <span>Dibuat: {formatDate(invitation.purchase_date)}</span>
-                                </span>
-                              </div>
 
-                              <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-600">Link Undangan Anda:</label>
-                                <div className="flex items-center">
-                                  <input
-                                    type="text"
-                                    readOnly
-                                    value={`${window.location.origin}${invitation.access_url}`}
-                                    className="w-full p-2 rounded-l-lg bg-gray-100 border border-gray-200 text-sm text-gray-700 outline-none"
-                                    onClick={(e) => e.currentTarget.select()}
-                                  />
-                                  <button
-                                    onClick={() => copyToClipboard(`${window.location.origin}${invitation.access_url}`)}
-                                    className="p-2 bg-gray-200 hover:bg-gray-300 rounded-r-lg transition-colors"
-                                    title="Copy Link"
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-gray-600">Link Undangan Anda:</label>
+                                  <div className="flex items-center">
+                                    <input
+                                      type="text"
+                                      readOnly
+                                      value={`${window.location.origin}${invitation.access_url}`}
+                                      className="w-full p-2 rounded-l-lg bg-gray-100 border border-gray-200 text-sm text-gray-700 outline-none"
+                                      onClick={(e) => e.currentTarget.select()}
+                                    />
+                                    <button
+                                      onClick={() => copyToClipboard(`${window.location.origin}${invitation.access_url}`)}
+                                      className="p-2 bg-gray-200 hover:bg-gray-300 rounded-r-lg transition-colors"
+                                      title="Copy Link"
+                                    >
+                                      <Copy className="w-4 h-4 text-gray-700" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                  <a
+                                    href={invitation.access_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-lg transition-all text-sm"
                                   >
-                                    <Copy className="w-4 h-4 text-gray-700" />
+                                    <Eye className="w-4 h-4" />
+                                    <span>Lihat Undangan</span>
+                                  </a>
+                                  <button
+                                    onClick={() => handleOpenPortfolioForm(invitation)}
+                                    className="flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-purple-500 text-purple-600 font-semibold hover:bg-purple-50 transition-all text-sm"
+                                  >
+                                    <BookOpen className="w-4 h-4" />
+                                    <span>{portfolio ? 'Edit Portofolio' : 'Buat Portofolio'}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => setActiveTab('media')}
+                                    className="flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 transition-all text-sm"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                    <span>Kelola Media</span>
                                   </button>
                                 </div>
                               </div>
-
-                              <div className="flex flex-wrap gap-2 pt-2">
-                                <a
-                                  href={invitation.access_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-lg transition-all text-sm"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span>Lihat Undangan</span>
-                                </a>
-                                <button
-                                  onClick={() => copyToClipboard(`${window.location.origin}${invitation.access_url}`)}
-                                  className="flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-purple-500 text-purple-600 font-semibold hover:bg-purple-50 transition-all text-sm"
-                                >
-                                  <Share className="w-4 h-4" />
-                                  <span>Bagikan</span>
-                                </button>
-                                <button
-                                  onClick={() => setActiveTab('media')}
-                                  className="flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 transition-all text-sm"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                  <span>Kelola Media</span>
-                                </button>
-                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -706,7 +739,7 @@ export default function UserPanel({
                     <label className={`relative group ${isStorageFull() ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'image')} className="hidden" disabled={uploadingMedia || isStorageFull()} />
                       <div className={`p-6 rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 transition-all text-center ${!isStorageFull() && 'hover:bg-purple-100 group-hover:border-purple-500'}`}>
-                        <Image className="w-12 h-12 text-purple-500 mx-auto mb-3" />
+                        <ImageIcon className="w-12 h-12 text-purple-500 mx-auto mb-3" />
                         <h3 className="font-bold text-gray-800 mb-1">Upload Gambar</h3>
                         <p className="text-xs text-gray-600">JPG, PNG, GIF, WEBP</p>
                         <p className="text-xs text-gray-500 mt-1">Max 5MB</p>
@@ -758,7 +791,7 @@ export default function UserPanel({
                   )}
 
                   <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
-                    {[{ id: 'all', label: 'Semua', icon: FileText }, { id: 'image', label: 'Gambar', icon: Image }, { id: 'video', label: 'Video', icon: Video }, { id: 'music', label: 'Musik', icon: Music }].map((filter) => {
+                    {[{ id: 'all', label: 'Semua', icon: FileText }, { id: 'image', label: 'Gambar', icon: ImageIcon }, { id: 'video', label: 'Video', icon: Video }, { id: 'music', label: 'Musik', icon: Music }].map((filter) => {
                       const Icon = filter.icon;
                       const count = filter.id === 'all' ? media.length : media.filter(m => m.file_type === filter.id).length;
                       return (
