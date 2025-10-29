@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Loader2, Image as ImageIcon, User, Calendar, MapPin, BookOpen, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Image as ImageIcon, User, Calendar, MapPin, BookOpen, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
 import { supabase, UserPortfolio, UserMedia } from '../lib/supabase';
 
 interface UserInvitation {
   id: string;
   template_id: string;
+  access_url: string;
   wedding_templates: { title: string };
 }
 
@@ -16,7 +17,13 @@ interface PortfolioFormModalProps {
   onSave: () => void;
 }
 
-const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, existingPortfolio, userMedia, onClose, onSave }) => {
+const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ 
+  invitation, 
+  existingPortfolio, 
+  userMedia, 
+  onClose, 
+  onSave 
+}) => {
   const [formData, setFormData] = useState({
     groom_name: '',
     bride_name: '',
@@ -26,6 +33,7 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
     couple_photo_url: '',
     groom_photo_url: '',
     bride_photo_url: '',
+    invitation_url: '',
     is_published: false,
   });
 
@@ -44,10 +52,17 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
         couple_photo_url: existingPortfolio.couple_photo_url || '',
         groom_photo_url: existingPortfolio.groom_photo_url || '',
         bride_photo_url: existingPortfolio.bride_photo_url || '',
+        invitation_url: (existingPortfolio as any).invitation_url || invitation.access_url || '',
         is_published: existingPortfolio.is_published || false,
       });
+    } else {
+      // Set default invitation URL from the invitation
+      setFormData(prev => ({
+        ...prev,
+        invitation_url: invitation.access_url || ''
+      }));
     }
-  }, [existingPortfolio]);
+  }, [existingPortfolio, invitation.access_url]);
 
   const handleSelectPhoto = (url: string) => {
     if (activePhotoPicker) {
@@ -87,18 +102,22 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
     if (!existingPortfolio || !confirm('Apakah Anda yakin ingin menghapus portofolio ini? Tindakan ini tidak dapat dibatalkan.')) return;
     setDeleting(true);
     try {
-        const { error } = await supabase.from('user_portfolios').delete().eq('id', existingPortfolio.id);
-        if (error) throw error;
-        onSave(); // Re-triggers data load
+      const { error } = await supabase.from('user_portfolios').delete().eq('id', existingPortfolio.id);
+      if (error) throw error;
+      onSave();
     } catch (error) {
-        console.error('Error deleting portfolio:', error);
-        alert('Gagal menghapus portofolio.');
+      console.error('Error deleting portfolio:', error);
+      alert('Gagal menghapus portofolio.');
     } finally {
-        setDeleting(false);
+      setDeleting(false);
     }
   };
 
-  const PhotoInput = ({ name, label, icon: Icon }: { name: keyof typeof formData, label: string, icon: React.ElementType }) => (
+  const PhotoInput = ({ name, label, icon: Icon }: { 
+    name: keyof typeof formData, 
+    label: string, 
+    icon: React.ElementType 
+  }) => (
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
       <div className="aspect-square w-full bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center relative group">
@@ -109,7 +128,8 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
         )}
         <div 
           onClick={() => setActivePhotoPicker(name)}
-          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer rounded-xl">
+          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer rounded-xl"
+        >
           <p className="text-white font-semibold">Pilih Foto</p>
         </div>
       </div>
@@ -122,16 +142,28 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
         <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
           <div className="p-4 border-b flex justify-between items-center">
             <h3 className="font-bold text-lg">Pilih Foto</h3>
-            <button onClick={() => setActivePhotoPicker(null)} className="p-2 rounded-full hover:bg-gray-100"><X/></button>
+            <button onClick={() => setActivePhotoPicker(null)} className="p-2 rounded-full hover:bg-gray-100">
+              <X/>
+            </button>
           </div>
           <div className="p-4 overflow-y-auto">
             {userMedia.length === 0 ? (
-                <p className="text-center text-gray-600 py-8">Anda belum mengupload gambar. Silakan upload di tab Media Saya.</p>
+              <p className="text-center text-gray-600 py-8">
+                Anda belum mengupload gambar. Silakan upload di tab Media Saya.
+              </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {userMedia.map(media => (
-                  <button key={media.id} onClick={() => handleSelectPhoto(media.file_url)} className="aspect-square rounded-lg overflow-hidden group relative">
-                    <img src={media.file_url} alt={media.file_name} className="w-full h-full object-cover"/>
+                  <button 
+                    key={media.id} 
+                    onClick={() => handleSelectPhoto(media.file_url)} 
+                    className="aspect-square rounded-lg overflow-hidden group relative"
+                  >
+                    <img 
+                      src={media.file_url} 
+                      alt={media.file_name} 
+                      className="w-full h-full object-cover"
+                    />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                       <p className="text-white font-semibold">Pilih</p>
                     </div>
@@ -145,15 +177,23 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
     );
   }
 
+  const fullInvitationUrl = formData.invitation_url.startsWith('http') 
+    ? formData.invitation_url 
+    : `${window.location.origin}${formData.invitation_url}`;
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl animate-scaleIn flex flex-col max-h-[90vh]">
         <div className="flex-shrink-0 sticky top-0 bg-white/95 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-gray-200 z-10">
           <div>
-            <h3 className="text-xl font-bold text-gray-800">{existingPortfolio ? 'Edit Portofolio' : 'Buat Portofolio Baru'}</h3>
+            <h3 className="text-xl font-bold text-gray-800">
+              {existingPortfolio ? 'Edit Portofolio' : 'Buat Portofolio Baru'}
+            </h3>
             <p className="text-sm text-gray-500">Untuk template: {invitation.wedding_templates.title}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors"><X className="w-6 h-6" /></button>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="overflow-y-auto">
@@ -169,52 +209,163 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({ invitation, exi
             <div className="lg:col-span-2 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nama Mempelai Pria</label>
-                  <input type="text" value={formData.groom_name} onChange={e => setFormData({...formData, groom_name: e.target.value})} className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" required />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nama Mempelai Pria
+                  </label>
+                  <input 
+                    type="text" 
+                    value={formData.groom_name} 
+                    onChange={e => setFormData({...formData, groom_name: e.target.value})} 
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
+                    required 
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nama Mempelai Wanita</label>
-                  <input type="text" value={formData.bride_name} onChange={e => setFormData({...formData, bride_name: e.target.value})} className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" required />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nama Mempelai Wanita
+                  </label>
+                  <input 
+                    type="text" 
+                    value={formData.bride_name} 
+                    onChange={e => setFormData({...formData, bride_name: e.target.value})} 
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
+                    required 
+                  />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Tanggal Pernikahan</label>
-                  <input type="date" value={formData.wedding_date} onChange={e => setFormData({...formData, wedding_date: e.target.value})} className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Tanggal Pernikahan
+                  </label>
+                  <input 
+                    type="date" 
+                    value={formData.wedding_date} 
+                    onChange={e => setFormData({...formData, wedding_date: e.target.value})} 
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Lokasi</label>
-                  <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="cth. Bali, Indonesia" className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Lokasi
+                  </label>
+                  <input 
+                    type="text" 
+                    value={formData.location} 
+                    onChange={e => setFormData({...formData, location: e.target.value})} 
+                    placeholder="cth. Bali, Indonesia" 
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
+                  />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Cerita Pernikahan Anda</label>
-                <textarea value={formData.story} onChange={e => setFormData({...formData, story: e.target.value})} rows={8} placeholder="Bagikan kisah indah Anda..." className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" />
-              </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 border">
-                 <label htmlFor="is_published" className="flex items-center cursor-pointer">
-                    <input type="checkbox" id="is_published" checked={formData.is_published} onChange={e => setFormData({...formData, is_published: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                    <span className="ml-3 text-gray-700 font-medium">Publikasikan Portofolio Ini</span>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Link Undangan Website
                 </label>
-                 <p className="text-xs text-gray-500">Jika dicentang, portofolio Anda akan dapat dilihat oleh pengunjung lain.</p>
+                <div className="space-y-2">
+                  <input 
+                    type="url" 
+                    value={formData.invitation_url} 
+                    onChange={e => setFormData({...formData, invitation_url: e.target.value})} 
+                    placeholder={invitation.access_url || "https://example.com/invitation"} 
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
+                  />
+                  {formData.invitation_url && (
+                    <div className="flex items-start space-x-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                      <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-blue-700">
+                        <p className="font-semibold mb-1">Preview URL:</p>
+                        <a 
+                          href={fullInvitationUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="underline hover:text-blue-800 break-all"
+                        >
+                          {fullInvitationUrl}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Cerita Pernikahan Anda
+                </label>
+                <textarea 
+                  value={formData.story} 
+                  onChange={e => setFormData({...formData, story: e.target.value})} 
+                  rows={8} 
+                  placeholder="Bagikan kisah indah Anda..." 
+                  className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
+                />
+              </div>
+
+              <div className="flex items-start space-x-3 p-4 rounded-lg bg-gray-50 border border-gray-200">
+                <label htmlFor="is_published" className="flex items-start cursor-pointer flex-1">
+                  <input 
+                    type="checkbox" 
+                    id="is_published" 
+                    checked={formData.is_published} 
+                    onChange={e => setFormData({...formData, is_published: e.target.checked})} 
+                    className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 mt-0.5 flex-shrink-0" 
+                  />
+                  <div className="ml-3">
+                    <span className="text-gray-700 font-medium block">
+                      Publikasikan Portofolio Ini
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Jika dicentang, portofolio dan link undangan Anda akan dapat dilihat oleh pengunjung lain di halaman portfolio gallery.
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
           
           <div className="flex-shrink-0 sticky bottom-0 bg-white/95 backdrop-blur-sm px-6 py-4 flex flex-col sm:flex-row gap-3 border-t border-gray-200">
-             {existingPortfolio && (
-                <button type="button" onClick={handleDelete} disabled={deleting} className="flex-1 px-6 py-3 rounded-xl bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-all disabled:opacity-50 flex items-center justify-center space-x-2">
-                    {deleting ? <Loader2 className="w-5 h-5 animate-spin"/> : <Trash2 className="w-5 h-5"/>}
-                    <span>Hapus Portofolio</span>
-                </button>
+            {existingPortfolio && (
+              <button 
+                type="button" 
+                onClick={handleDelete} 
+                disabled={deleting} 
+                className="flex-1 px-6 py-3 rounded-xl bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {deleting ? <Loader2 className="w-5 h-5 animate-spin"/> : <Trash2 className="w-5 h-5"/>}
+                <span>Hapus Portofolio</span>
+              </button>
             )}
-            <button type="submit" disabled={saving} className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2">
+            <button 
+              type="submit" 
+              disabled={saving} 
+              className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+            >
               {saving ? <Loader2 className="w-5 h-5 animate-spin"/> : <Save className="w-5 h-5"/>}
               <span>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
             </button>
           </div>
         </form>
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
