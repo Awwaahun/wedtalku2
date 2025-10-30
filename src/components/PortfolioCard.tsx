@@ -1,10 +1,25 @@
 import React from 'react';
 import { Heart, Eye } from 'lucide-react';
-import type { PortfolioWithUser } from '../lib/supabase';
+
+interface Portfolio {
+  id: string;
+  groom_name: string;
+  bride_name: string;
+  couple_photo_url: string;
+  groom_photo_url?: string;
+  bride_photo_url?: string;
+  wedding_date?: string;
+  location?: string;
+  story?: string;
+  template_title: string;
+  likes_count: number;
+  views_count: number;
+  user_name: string;
+}
 
 interface PortfolioCardProps {
-  portfolio: PortfolioWithUser;
-  onViewDetails: (portfolio: PortfolioWithUser) => void;
+  portfolio: Portfolio;
+  onViewDetails: (portfolio: Portfolio) => void;
   onToggleLike: (portfolioId: string) => void;
   isLiked: boolean;
   index?: number;
@@ -34,57 +49,74 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({
       style={{ animationDelay: `${index * 120}ms`, animationFillMode: 'both' }}
       onClick={() => onViewDetails(portfolio)}
     >
-      {/* Main image */}
-      <div className="relative aspect-[3/4] overflow-hidden">
+      {/* Main image - Aspect ratio diubah menjadi lebih tinggi */}
+      <div className="relative aspect-[3/4.5] overflow-hidden">
         <img
           src={portfolio.couple_photo_url}
           alt={`Wedding of ${portfolio.groom_name} & ${portfolio.bride_name}`}
           className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-1"
         />
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+        {/* Gradient overlay - diubah untuk memberi ruang pada nama di atas */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-transparent to-black/90" />
 
-        {/* Subtle top gradient glow */}
-        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/10 to-transparent" />
+        {/* Nama Mempelai di Bagian Atas */}
+        <div className="absolute top-0 left-0 right-0 p-5 sm:p-6 text-white space-y-2">
+          <p className="text-xs sm:text-sm text-white/80 text-center font-medium tracking-wide">
+            Pernikahan dari
+          </p>
+          <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-center leading-tight">
+            {portfolio.groom_name}
+            <span className="block text-pink-200 text-base sm:text-lg lg:text-xl my-1">&</span>
+            {portfolio.bride_name}
+          </h3>
+        </div>
       </div>
 
-      {/* Couple section */}
+      {/* Foto Individu dan Info - di bagian bawah */}
       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 text-white space-y-3 backdrop-blur-[2px]">
         {portfolio.groom_photo_url && portfolio.bride_photo_url ? (
-          <div className="flex items-center justify-center gap-3 relative">
-            <div className="flex flex-col items-center gap-2 w-1/2">
+          <div className="flex items-center justify-center gap-4 relative">
+            {/* Foto Mempelai Pria */}
+            <div className="flex flex-col items-center gap-2">
               <img
                 src={portfolio.groom_photo_url}
                 alt={portfolio.groom_name}
-                className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-white/80 shadow-md"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-cover rounded-full border-3 border-white/80 shadow-lg"
               />
-              <h4 className="font-semibold text-sm sm:text-base text-center truncate">{portfolio.groom_name}</h4>
+              <span className="text-xs sm:text-sm font-semibold text-center">
+                {portfolio.groom_name.split(' ')[0]}
+              </span>
             </div>
 
-            {/* Center heart */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-3 p-2 bg-white/25 backdrop-blur-md rounded-full border border-white/40 animate-pulse">
-              <Heart className="w-4 h-4 text-white fill-white drop-shadow-md" />
+            {/* Center heart - diperbesar */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-4 p-2.5 bg-white/30 backdrop-blur-md rounded-full border-2 border-white/50 animate-pulse">
+              <Heart className="w-5 h-5 text-white fill-white drop-shadow-md" />
             </div>
 
-            <div className="flex flex-col items-center gap-2 w-1/2">
+            {/* Foto Mempelai Wanita */}
+            <div className="flex flex-col items-center gap-2">
               <img
                 src={portfolio.bride_photo_url}
                 alt={portfolio.bride_name}
-                className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-white/80 shadow-md"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-cover rounded-full border-3 border-white/80 shadow-lg"
               />
-              <h4 className="font-semibold text-sm sm:text-base text-center truncate">{portfolio.bride_name}</h4>
+              <span className="text-xs sm:text-sm font-semibold text-center">
+                {portfolio.bride_name.split(' ')[0]}
+              </span>
             </div>
           </div>
         ) : (
-          <h3 className="text-lg sm:text-2xl font-bold text-center">
-            {portfolio.groom_name} & {portfolio.bride_name}
-          </h3>
+          <div className="text-center">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-full bg-gradient-to-r from-pink-400 to-purple-400 flex items-center justify-center">
+              <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-white fill-white" />
+            </div>
+          </div>
         )}
 
         {/* Footer info */}
-        <div className="flex justify-center items-center gap-2 text-xs sm:text-sm text-white/80 mt-2">
-          <span>✨ Template:</span>
+        <div className="flex justify-center items-center gap-2 text-xs sm:text-sm text-white/80 mt-2 pt-2 border-t border-white/20">
+          <span>✨</span>
           <span className="font-semibold">{portfolio.template_title}</span>
         </div>
       </div>
