@@ -1,30 +1,25 @@
-import React, { useState } from 'react';
-import { Eye, Heart, Sparkles, Star, Zap, Edit, User, CheckCircle2, BookOpen } from 'lucide-react';
+
+import React from 'react';
+import { Eye, Heart, Sparkles, Star, Zap, CheckCircle2, BookOpen } from 'lucide-react';
 import { WeddingTemplate } from '../lib/supabase';
 
 interface TemplateCardProps {
   template: WeddingTemplate;
   onViewDetails: (template: WeddingTemplate) => void;
-  onCreateInvitation?: (template: WeddingTemplate) => void;
   index?: number;
-  viewMode?: 'grid-3' | 'grid-2';
   createdInvitationIds?: string[];
-  onGoToUserPanel?: () => void;
   favoriteIds?: string[];
   onToggleFavorite?: (templateId: string) => void;
 }
 
 const RatingDisplay = ({ rating, count }: { rating: number; count: number }) => {
   const fullStars = Math.round(rating);
-  const emptyStars = 5 - fullStars;
 
   if (count === 0) {
     return (
-      <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-          <Star key={`empty-${i}`} className="w-3 h-3 text-gray-300" />
-        ))}
-         <span className="text-xs text-gray-400 font-medium ml-1">Baru</span>
+      <div className="flex items-center space-x-1">
+        <Star className="w-4 h-4 text-gray-300" />
+        <span className="text-xs text-gray-500 font-medium">Baru</span>
       </div>
     );
   }
@@ -32,14 +27,12 @@ const RatingDisplay = ({ rating, count }: { rating: number; count: number }) => 
   return (
     <div className="flex items-center space-x-1">
       <div className="flex items-center">
-        {[...Array(fullStars)].map((_, i) => (
-          <Star key={`full-${i}`} className="w-3 h-3 text-amber-400 fill-current" />
-        ))}
-        {[...Array(emptyStars)].map((_, i) => (
-          <Star key={`empty-${i}`} className="w-3 h-3 text-amber-200 fill-current" />
+        {[...Array(5)].map((_, i) => (
+          <Star key={`star-${i}`} className={`w-4 h-4 ${i < fullStars ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
         ))}
       </div>
-      <span className="text-xs text-gray-500 font-medium">({count})</span>
+      <span className="text-xs text-gray-600 font-semibold">{rating.toFixed(1)}</span>
+      <span className="text-xs text-gray-400">({count})</span>
     </div>
   );
 };
@@ -47,16 +40,11 @@ const RatingDisplay = ({ rating, count }: { rating: number; count: number }) => 
 export default function TemplateCard({ 
   template, 
   onViewDetails, 
-  onCreateInvitation, 
   index = 0, 
-  viewMode = 'grid-3',
   createdInvitationIds,
-  onGoToUserPanel,
   favoriteIds,
   onToggleFavorite,
 }: TemplateCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   const isCreated = createdInvitationIds?.includes(template.id);
   const isFavorited = favoriteIds?.includes(template.id);
 
@@ -70,34 +58,10 @@ export default function TemplateCard({
 
   const getCategoryConfig = (category: string) => {
     const configs = {
-      modern: {
-        gradient: 'from-cyan-500 to-blue-500',
-        bgLight: 'bg-cyan-50',
-        text: 'text-cyan-700',
-        border: 'border-cyan-200',
-        glow: 'shadow-cyan-500/50'
-      },
-      classic: {
-        gradient: 'from-pink-500 to-rose-500',
-        bgLight: 'bg-pink-50',
-        text: 'text-pink-700',
-        border: 'border-pink-200',
-        glow: 'shadow-pink-500/50'
-      },
-      minimalist: {
-        gradient: 'from-purple-500 to-indigo-500',
-        bgLight: 'bg-purple-50',
-        text: 'text-purple-700',
-        border: 'border-purple-200',
-        glow: 'shadow-purple-500/50'
-      },
-      elegant: {
-        gradient: 'from-amber-500 to-orange-500',
-        bgLight: 'bg-amber-50',
-        text: 'text-amber-700',
-        border: 'border-amber-200',
-        glow: 'shadow-amber-500/50'
-      },
+      modern: { gradient: 'from-cyan-500 to-blue-500', bg: 'bg-cyan-100', text: 'text-cyan-700', glow: 'shadow-cyan-500/50' },
+      classic: { gradient: 'from-pink-500 to-rose-500', bg: 'bg-pink-100', text: 'text-pink-700', glow: 'shadow-pink-500/50' },
+      minimalist: { gradient: 'from-purple-500 to-indigo-500', bg: 'bg-purple-100', text: 'text-purple-700', glow: 'shadow-purple-500/50' },
+      elegant: { gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-100', text: 'text-amber-700', glow: 'shadow-amber-500/50' },
     };
     return configs[category as keyof typeof configs] || configs.modern;
   };
@@ -109,207 +73,99 @@ export default function TemplateCard({
 
   const categoryConfig = getCategoryConfig(template.category);
 
-  // Adjust card size based on view mode
-  const cardHeight = viewMode === 'grid-2' ? 'h-64 sm:h-72 lg:h-80' : 'h-56 sm:h-64 lg:h-72';
-  const contentPadding = viewMode === 'grid-2' ? 'p-4 sm:p-6 lg:p-8' : 'p-4 sm:p-5 lg:p-6';
-  const titleSize = viewMode === 'grid-2' ? 'text-lg sm:text-xl lg:text-2xl' : 'text-base sm:text-lg lg:text-xl';
-  const priceSize = viewMode === 'grid-2' ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl lg:text-2xl';
-  const buttonSize = viewMode === 'grid-2' ? 'px-4 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4' : 'px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3';
-
   return (
     <div 
-      className="group relative bg-white rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-2xl animate-fadeInUp"
-      style={{ 
-        animationDelay: `${index * 100}ms`,
-        animationFillMode: 'both'
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="group relative bg-white rounded-3xl overflow-hidden shadow-lg transform transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-200/50 animate-fadeInUp cursor-pointer"
+      style={{ animationDelay: `${index * 80}ms`, animationFillMode: 'both' }}
+      onClick={() => onViewDetails(template)}
     >
-      {/* Featured Badge */}
-      {template.is_featured && (
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 animate-slideInLeft">
-          <div className="relative">
-            <div className={`absolute inset-0 bg-gradient-to-r ${categoryConfig.gradient} blur-lg opacity-60 animate-pulse`} />
-            <div className={`relative px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white text-xs font-bold flex items-center space-x-1 shadow-lg`}>
-              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
-              <span className="hidden xs:inline">Featured</span>
-              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Image Container */}
-      <div className={`relative ${cardHeight} overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200`}>
+      <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={template.thumbnail_url}
           alt={template.title}
-          className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-1"
+          className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+        {template.is_featured && (
+          <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold flex items-center space-x-1 shadow-lg">
+            <Star className="w-3 h-3 fill-current" />
+            <span>Featured</span>
+          </div>
+        )}
         
-        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 ${
-          isHovered ? 'opacity-100' : 'opacity-0'
-        }`} />
-
-        <div className={`absolute inset-0 flex items-center justify-center space-x-2 sm:space-x-3 transition-all duration-500 px-4 ${
-          isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}>
-          {isCreated ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); onGoToUserPanel?.(); }}
-              className="group/btn relative px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 rounded-full bg-white text-gray-800 font-semibold overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-xl text-xs sm:text-sm"
-            >
-              <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Panel</span>
-              </span>
-              <div className={`absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300`} />
-            </button>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onViewDetails(template); }}
-              className="group/btn relative px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 rounded-full bg-white text-gray-800 font-semibold overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-xl text-xs sm:text-sm"
-            >
-              <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Detail</span>
-              </span>
-              <div className={`absolute inset-0 bg-gradient-to-r ${categoryConfig.gradient} opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300`} />
-            </button>
-          )}
-
-          <button
-            onClick={handleToggleFavorite}
-            className={`p-2 sm:p-2.5 lg:p-3 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110 ${
-              isFavorited 
-                ? `bg-gradient-to-r ${categoryConfig.gradient} text-white shadow-lg ${categoryConfig.glow}`
-                : 'bg-white/90 text-gray-700 hover:bg-white'
-            }`}
-          >
-            <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${isFavorited ? 'fill-current scale-110' : ''}`} />
-          </button>
-        </div>
-
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
-          {isCreated ? (
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-cyan-500 blur-lg opacity-60 animate-pulse" />
-              <div className="relative px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-green-500 to-cyan-500 text-white text-xs font-bold flex items-center space-x-1 shadow-lg">
-                <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                <span>Dimiliki</span>
-              </div>
+        {isCreated ? (
+           <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500 to-cyan-500 text-white text-xs font-bold flex items-center space-x-1 shadow-lg">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>Dimiliki</span>
+          </div>
+        ) : (
+          <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+            <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
+              <Eye className="w-3 h-3" />
+              <span>{template.views_count.toLocaleString()}</span>
             </div>
-          ) : (
-            <div className="flex flex-col items-end gap-2">
-              <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/30 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
-                <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                <span className="hidden xs:inline">{template.views_count.toLocaleString()}</span>
+            {(template.portfolio_count || 0) > 0 && (
+              <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
+                <BookOpen className="w-3 h-3" />
+                <span>{template.portfolio_count} Portofolio</span>
               </div>
-               {(template.portfolio_count || 0) > 0 && (
-                <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/30 backdrop-blur-md text-white text-xs font-medium flex items-center space-x-1">
-                  <BookOpen className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span className="hidden xs:inline">{template.portfolio_count} Portofolio</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={handleToggleFavorite}
+          aria-label={isFavorited ? "Hapus dari favorit" : "Tambah ke favorit"}
+          className={`absolute bottom-4 right-4 p-3 rounded-full backdrop-blur-md transition-all duration-300 transform-gpu hover:scale-110 ${
+            isFavorited 
+              ? `bg-gradient-to-r ${categoryConfig.gradient} text-white shadow-lg ${categoryConfig.glow}`
+              : 'bg-white/90 text-gray-700 hover:bg-white'
+          }`}
+        >
+          <Heart className={`w-5 h-5 transition-all duration-300 ${isFavorited ? 'fill-current' : ''}`} />
+        </button>
       </div>
 
-      {/* Content */}
-      <div className={`${contentPadding} space-y-3 sm:space-y-4`}>
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between">
-            <span className={`inline-flex items-center space-x-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full ${categoryConfig.bgLight} ${categoryConfig.text} text-xs font-bold border ${categoryConfig.border}`}>
-              <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-              <span>{template.category.charAt(0).toUpperCase() + template.category.slice(1)}</span>
-            </span>
-            
-            <RatingDisplay rating={template.avg_rating || 0} count={template.rating_count || 0} />
+      <div className="p-5 space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full ${categoryConfig.bg} ${categoryConfig.text} text-xs font-bold`}>
+            <Zap className="w-3 h-3" />
+            <span>{template.category.charAt(0).toUpperCase() + template.category.slice(1)}</span>
+          </span>
+          <RatingDisplay rating={template.avg_rating || 0} count={template.rating_count || 0} />
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300 line-clamp-2 h-8">
+          {template.title}
+        </h3>
+
+        <div className="pt-4 border-t border-gray-100 flex items-end justify-between">
+          <div>
+            <p className="text-sm text-gray-500">Harga</p>
+            <p className="text-2xl font-bold text-gray-800">
+              {formatPrice(template.price)}
+            </p>
           </div>
-
-          <h3 className={`${titleSize} font-bold text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300 line-clamp-2`}>
-            {template.title}
-          </h3>
-        </div>
-
-        <p className="text-xs sm:text-sm text-gray-600 leading-relaxed line-clamp-2">
-          {template.description}
-        </p>
-
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          {template.features.slice(0, viewMode === 'grid-2' ? 3 : 2).map((feature, idx) => (
-            <span
-              key={idx}
-              className="group/feature relative px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-md"
-            >
-              <span className="relative z-10 line-clamp-1">{feature}</span>
-              <div className={`absolute inset-0 bg-gradient-to-r ${categoryConfig.gradient} opacity-0 group-hover/feature:opacity-10 transition-opacity duration-300`} />
-            </span>
-          ))}
-          {template.features.length > (viewMode === 'grid-2' ? 3 : 2) && (
-            <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs ${categoryConfig.bgLight} ${categoryConfig.text} rounded-lg font-semibold border ${categoryConfig.border}`}>
-              +{template.features.length - (viewMode === 'grid-2' ? 3 : 2)}
-            </span>
-          )}
-        </div>
-
-        <div className="pt-3 sm:pt-4 border-t border-gray-100">
-          <div className="flex items-center justify-between gap-2">
-            <div className="space-y-0.5 sm:space-y-1 min-w-0">
-              <div className="text-xs text-gray-500 font-medium">Harga</div>
-              <div className={`${priceSize} font-bold bg-gradient-to-r ${categoryConfig.gradient} bg-clip-text text-transparent truncate`}>
-                {formatPrice(template.price)}
-              </div>
-            </div>
-            
-            <button
-              onClick={(e) => { e.stopPropagation(); onViewDetails(template); }}
-              className={`group/cta relative ${buttonSize} rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl ${categoryConfig.glow} flex-shrink-0`}
-            >
-              <span className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                <Eye className="w-3 h-3 sm:w-4 sm:h-4 group-hover/cta:rotate-12 transition-transform duration-300" />
-                <span className="text-xs sm:text-sm">Lihat Detail</span>
-              </span>
-              <div className="absolute inset-0 bg-white opacity-0 group-hover/cta:opacity-20 transition-opacity duration-300" />
-            </button>
+          <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold flex items-center space-x-2 transition-all duration-300 group-hover:shadow-lg ${categoryConfig.glow}`}>
+            <Eye className="w-4 h-4" />
+            <span>Detail</span>
           </div>
         </div>
       </div>
-
-      <div className={`absolute -bottom-2 -right-2 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br ${categoryConfig.gradient} rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
-      <div className={`absolute -top-2 -left-2 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br ${categoryConfig.gradient} rounded-full blur-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-700`} />
-
       <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
           }
         }
-
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
         .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out;
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.8s ease-out;
+          animation: fadeInUp 0.5s ease-out;
         }
       `}</style>
     </div>

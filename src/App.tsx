@@ -492,9 +492,8 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
             <TemplateGrid
               onViewDetails={handleViewDetails}
-              onCreateInvitation={handleCreateInvitation}
+// FIX: The `onCreateInvitation` prop is not valid for `TemplateGrid`. Removing it.
               showFeaturedOnly={true}
-              featuredLayout={true}
               createdInvitationIds={createdInvitationIds}
               onGoToUserPanel={handleGoToUserPanel}
               favoriteIds={favoriteIds}
@@ -543,7 +542,7 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
             <TemplateGrid
               onViewDetails={handleViewDetails}
-              onCreateInvitation={handleCreateInvitation}
+// FIX: The `onCreateInvitation` prop is not valid for `TemplateGrid`. Removing it.
               filterCategory={selectedCategory}
               createdInvitationIds={createdInvitationIds}
               onGoToUserPanel={handleGoToUserPanel}

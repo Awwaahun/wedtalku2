@@ -1,3 +1,4 @@
+
 // src/components/UserPanel.tsx
 import React, { useState, useEffect } from 'react';
 import { 
@@ -890,13 +891,10 @@ export default function UserPanel({
                           key={template.id}
                           template={template}
                           onViewDetails={onViewDetails}
-                          onCreateInvitation={onCreateInvitation}
-                          onGoToUserPanel={onGoToUserPanel}
                           favoriteIds={favoriteIds}
                           onToggleFavorite={onToggleFavorite}
                           createdInvitationIds={createdInvitationIds}
                           index={index}
-                          viewMode='grid-2'
                         />
                       ))}
                     </div>

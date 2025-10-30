@@ -321,9 +321,9 @@ export default function TemplateDetail({
               
               <button
                 onClick={() => setShowPreview(true)}
-                className="absolute inset-0 m-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                className="absolute inset-0 m-auto w-10 h-10 sm:w-20 sm:h-20 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
               >
-                <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
+                <Eye className="w-4 h-4 sm:w-8 sm:h-8 text-purple-600" />
               </button>
 
               {template.is_featured && (
