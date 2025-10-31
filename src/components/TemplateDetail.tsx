@@ -327,7 +327,7 @@ export default function TemplateDetail({
               </button>
 
               {template.is_featured && (
-                <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
+                <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
                   <div className={`px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r ${config.gradient} text-white text-xs sm:text-sm font-bold flex items-center space-x-1 shadow-lg`}>
                     <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
                     <span>Featured</span>
