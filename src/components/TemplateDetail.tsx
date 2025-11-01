@@ -209,12 +209,10 @@ export default function TemplateDetail({
     return configs[category as keyof typeof configs] || configs.modern;
   };
 
-  const galleryImages = [
-    template.thumbnail_url,
-    'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=800',
-  ];
+// Use template's own gallery_urls if available, otherwise use thumbnail as fallback
+  const galleryImages = template.gallery_urls && template.gallery_urls.length > 0
+    ? template.gallery_urls
+    : [template.thumbnail_url]; // Fallback to thumbnail if no gallery
 
   const specifications = [
     { icon: Monitor, label: 'Responsive Design', value: 'Mobile, Tablet, Desktop' },

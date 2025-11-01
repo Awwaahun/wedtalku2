@@ -14,6 +14,7 @@ export interface WeddingTemplate {
   thumbnail_url: string;
   demo_url: string;
   features: string[];
+  gallery_urls: string[];
   category: 'modern' | 'classic' | 'minimalist' | 'elegant';
   is_featured: boolean;
   status: 'active' | 'draft' | 'sold';
