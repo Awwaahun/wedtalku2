@@ -1,0 +1,610 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --blur-2xs: 2px; 
+}
+
+@layer base {
+  body {
+    @apply font-sans text-gray-900;
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', serif;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .font-sans {
+    font-family: 'Montserrat', sans-serif;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-30px) rotate(180deg);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(244, 63, 94, 0.6);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes flip-number {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+.animate-float {
+  animation: float 20s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-fade-in-delay {
+  animation: fade-in 1s ease-out 0.3s both;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out both;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.8s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.8s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.6s ease-out both;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+.animate-wave {
+  animation: wave 3s ease-in-out infinite;
+}
+
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 5s linear infinite;
+}
+
+@keyframes fade-slide {
+  0% { opacity: 0; transform: translateX(20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.animate-fade-slide {
+  animation: fade-slide 0.7s ease-in-out;
+}
+
+/* ============================================
+   FLORAL DECORATIONS - COMPLETE CSS ANIMATIONS
+   ============================================ */
+
+/* ==================== KEYFRAMES ==================== */
+
+/* Line Drawing Animation */
+@keyframes draw-line {
+  0% {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/* Flower Blooming Animation */
+@keyframes bloom {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  60% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Leaves Swaying Animation (Left/Normal) */
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Leaves Swaying Animation (Right/Reverse) */
+@keyframes sway-reverse {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-5deg);
+  }
+}
+
+/* Gentle Sway for Bottom Decorations */
+@keyframes gentle-sway {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(3deg);
+  }
+}
+
+/* Gentle Sway Reverse for Bottom Decorations */
+@keyframes gentle-sway-reverse {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(-3px) rotate(-3deg);
+  }
+}
+
+/* Sparkles Twinkling Animation */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Floating Petals Animation */
+@keyframes float-petal {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(110vh) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Gentle Float for Existing Elements (if needed) */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-10px) translateX(5px);
+  }
+}
+
+/* Gentle Float Reverse */
+@keyframes float-gentle-reverse {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-10px) translateX(-5px);
+  }
+}
+
+/* Sparkle Slow for Background Elements */
+@keyframes sparkle-slow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+
+/* Draw Line Animation */
+.animate-draw-line {
+  animation: draw-line 1.5s ease-out forwards;
+}
+
+/* Bloom Animations with Staggered Delays */
+.animate-bloom {
+  animation: bloom 0.8s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-bloom-delay-1 {
+  animation: bloom 0.8s ease-out 0.5s forwards;
+  opacity: 0;
+}
+
+.animate-bloom-delay-2 {
+  animation: bloom 0.8s ease-out 0.7s forwards;
+  opacity: 0;
+}
+
+.animate-bloom-delay-3 {
+  animation: bloom 0.8s ease-out 0.9s forwards;
+  opacity: 0;
+}
+
+/* Sway Animations */
+.animate-sway {
+  animation: sway 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-sway-reverse {
+  animation: sway-reverse 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-gentle-sway {
+  animation: gentle-sway 3s ease-in-out infinite;
+}
+
+.animate-gentle-sway-reverse {
+  animation: gentle-sway-reverse 3s ease-in-out infinite;
+}
+
+/* Twinkle Animations */
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.animate-twinkle-delay {
+  animation: twinkle 2s ease-in-out infinite 0.5s;
+}
+
+/* Float Animations */
+.animate-float-petal {
+  animation: float-petal 20s linear infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.animate-float-gentle-reverse {
+  animation: float-gentle-reverse 4s ease-in-out infinite;
+}
+
+.animate-sparkle-slow {
+  animation: sparkle-slow 3s ease-in-out infinite;
+}
+
+/* ==================== ADDITIONAL EFFECTS ==================== */
+
+/* Pulse Glow Effect (for hearts or special elements) */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(244, 63, 94, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Wave Animation */
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-wave {
+  animation: wave 3s ease-in-out infinite;
+}
+
+/* ==================== RESPONSIVE ADJUSTMENTS ==================== */
+
+/* Mobile: Reduce animation complexity */
+@media (max-width: 768px) {
+  .animate-float-petal {
+    animation-duration: 25s; /* Slower on mobile */
+  }
+  
+  .animate-sway,
+  .animate-sway-reverse {
+    animation-duration: 6s; /* Slower sway on mobile */
+  }
+  
+  /* Reduce transform distance on mobile */
+  @keyframes gentle-sway {
+    0%, 100% {
+      transform: translateX(0) rotate(0deg);
+    }
+    50% {
+      transform: translateX(2px) rotate(2deg);
+    }
+  }
+  
+  @keyframes gentle-sway-reverse {
+    0%, 100% {
+      transform: translateX(0) rotate(0deg);
+    }
+    50% {
+      transform: translateX(-2px) rotate(-2deg);
+    }
+  }
+}
+
+/* Tablet: Medium adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .animate-float-petal {
+    animation-duration: 22s;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-draw-line,
+  .animate-bloom,
+  .animate-bloom-delay-1,
+  .animate-bloom-delay-2,
+  .animate-bloom-delay-3,
+  .animate-sway,
+  .animate-sway-reverse,
+  .animate-gentle-sway,
+  .animate-gentle-sway-reverse,
+  .animate-twinkle,
+  .animate-twinkle-delay,
+  .animate-float-petal,
+  .animate-float-gentle,
+  .animate-float-gentle-reverse,
+  .animate-sparkle-slow,
+  .animate-pulse-glow,
+  .animate-wave {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ==================== PERFORMANCE OPTIMIZATIONS ==================== */
+
+/* Use GPU acceleration for transforms */
+.animate-draw-line,
+.animate-bloom,
+.animate-bloom-delay-1,
+.animate-bloom-delay-2,
+.animate-bloom-delay-3,
+.animate-sway,
+.animate-sway-reverse,
+.animate-gentle-sway,
+.animate-gentle-sway-reverse,
+.animate-float-petal,
+.animate-float-gentle,
+.animate-float-gentle-reverse {
+  will-change: transform, opacity;
+}
+
+/* Optimize twinkle animations */
+.animate-twinkle,
+.animate-twinkle-delay,
+.animate-sparkle-slow {
+  will-change: opacity, transform;
+}
+
+/* ==================== SMOOTH TRANSITIONS ==================== */
+
+/* Ensure smooth transitions for visibility changes */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.duration-1000 {
+  transition-duration: 1000ms;
+}
+
+.ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ==================== Z-INDEX MANAGEMENT ==================== */
+
+/* Ensure proper layering */
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+.z-30 { z-index: 30; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: 50; }
+.z-\[60\] { z-index: 60; }
+
+/* ==================== POINTER EVENTS ==================== */
+
+/* Prevent decorations from blocking interactions */
+.pointer-events-none {
+  pointer-events: none;
+}
+
+/* ==================== OVERFLOW CONTROL ==================== */
+
+/* Prevent horizontal scroll from animations */
+.overflow-x-hidden {
+  overflow-x: hidden;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* ==================== NOTES ==================== */
+
+/*
+  Performance Tips:
+  1. Animations use transform and opacity (GPU-accelerated)
+  2. will-change hints browser for optimization
+  3. Reduced motion support for accessibility
+  4. Mobile optimizations reduce complexity
+  5. Pointer-events: none prevents interaction blocking
+  
+  Timing Structure:
+  - Top Left: 100ms delay
+  - Top Right: 250ms delay
+  - Bottom Left: 400ms delay
+  - Bottom Right: 550ms delay
+  - Petals: 1000ms delay (one-time)
+  
+  Internal SVG Animations:
+  - Line drawing: 1.5s
+  - Bloom: 0.8s (staggered 0.3s, 0.5s, 0.7s, 0.9s)
+  - Sway: 4s infinite
+  - Twinkle: 2s infinite
+  - Petals fall: 20s infinite
+*/
+
