@@ -150,12 +150,12 @@ export default function TemplateCard({
         }`} />
 
         {/* Top Badges Row */}
-        <div className="absolute bottom-4 left-4 right-4 flex items-start justify-between gap-2">
+        <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
           <div className="flex flex-col gap-2">
             {template.is_featured && (
-              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-lg animate-pulse">
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-lg">
                 <Star className="w-3.5 h-3.5 fill-current" />
-                <span>Featured</span>
+                
               </div>
             )}
             
@@ -176,7 +176,7 @@ export default function TemplateCard({
             <div className="flex flex-col items-end gap-2">
               <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-xs font-medium shadow-lg">
                 <Eye className="w-3.5 h-3.5" />
-                <span>{template.views_count.toLocaleString()}</span>
+                <span>{(template.views_count || 0).toLocaleString()}</span>
               </div>
               
               {(template.portfolio_count || 0) > 0 && (
@@ -190,7 +190,7 @@ export default function TemplateCard({
         </div>
 
         {/* Bottom Action Buttons */}
-        <div className="absolute top-4 right-4 flex items-center gap-2">
+        <div className="absolute bottom-4 right-4 flex items-center gap-2">
           {/* Favorite Button */}
           <button
             onClick={handleToggleFavorite}
@@ -202,7 +202,7 @@ export default function TemplateCard({
             }`}
           >
             <Heart 
-              className={`w-3 h-3 transition-all duration-300 ${
+              className={`w-5 h-5 transition-all duration-300 ${
                 isFavorited ? 'fill-current scale-110' : 'group-hover/heart:scale-110'
               }`} 
             />
@@ -239,7 +239,7 @@ export default function TemplateCard({
               <span>•</span>
               <span className="flex items-center space-x-1">
                 <Eye className="w-3 h-3" />
-                <span>{template.views_count}</span>
+                <span>{template.views_count || 0}</span>
               </span>
             </div>
           </div>

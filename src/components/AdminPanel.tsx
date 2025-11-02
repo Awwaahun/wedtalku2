@@ -351,7 +351,7 @@ export default function AdminPanel() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-gray-600">
-                            {template.views_count}
+                            {template.views_count || 0}
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center space-x-2">

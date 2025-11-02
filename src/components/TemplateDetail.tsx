@@ -209,10 +209,9 @@ export default function TemplateDetail({
     return configs[category as keyof typeof configs] || configs.modern;
   };
 
-// Use template's own gallery_urls if available, otherwise use thumbnail as fallback
-  const galleryImages = template.gallery_urls && template.gallery_urls.length > 0
+const galleryImages = template.gallery_urls && template.gallery_urls.length > 0
     ? template.gallery_urls
-    : [template.thumbnail_url]; // Fallback to thumbnail if no gallery
+    : [template.thumbnail_url];
 
   const specifications = [
     { icon: Monitor, label: 'Responsive Design', value: 'Mobile, Tablet, Desktop' },
@@ -319,23 +318,23 @@ export default function TemplateDetail({
               
               <button
                 onClick={() => setShowPreview(true)}
-                className="absolute inset-0 m-auto w-10 h-10 sm:w-20 sm:h-20 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                className="absolute inset-0 m-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
               >
-                <Eye className="w-4 h-4 sm:w-8 sm:h-8 text-purple-600" />
+                <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
               </button>
 
               {template.is_featured && (
                 <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
                   <div className={`px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r ${config.gradient} text-white text-xs sm:text-sm font-bold flex items-center space-x-1 shadow-lg`}>
                     <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
-                    <span>Featured</span>
+                    
                   </div>
                 </div>
               )}
 
               <div className="absolute top-3 right-3 sm:top-4 sm:right-4 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-xs sm:text-sm font-medium flex items-center space-x-1">
                 <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">{template.views_count.toLocaleString()}</span>
+                <span className="hidden xs:inline">{(template.views_count || 0).toLocaleString()}</span>
               </div>
             </div>
 

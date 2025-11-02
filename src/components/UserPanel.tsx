@@ -1,4 +1,5 @@
 
+
 // src/components/UserPanel.tsx
 import React, { useState, useEffect } from 'react';
 import { 
@@ -104,7 +105,7 @@ export default function UserPanel({
 
   useEffect(() => {
     loadUserData();
-  }, []);
+  }, [favoriteIds]);
 
   const loadUserData = async () => {
     setLoading(true);
@@ -138,22 +139,24 @@ export default function UserPanel({
         
         setInvitations(invitationsData || []);
 
-        // Load favorite templates
-        const { data: favData } = await supabase
-          .from('favorites')
-          .select('wedding_templates(*)') // This assumes a foreign key is set up
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        // Load favorite templates using IDs from App.tsx
+        if (favoriteIds.length > 0) {
+            const { data: favTemplatesData, error: favError } = await supabase
+                .from('wedding_templates')
+                .select('*')
+                .in('id', favoriteIds);
 
-        if (favData) {
-          // FIX: The joined data from `wedding_templates` can be a nested array.
-          // Flatten the array structure and filter out any null values to ensure
-          // we have a clean array of WeddingTemplate objects.
-          const templates = favData
-            .map(f => f.wedding_templates)
-            .flat()
-            .filter(Boolean) as WeddingTemplate[];
-          setFavoriteTemplates(templates);
+            if (favError) {
+                console.error('Error loading favorite templates:', favError);
+                setFavoriteTemplates([]);
+            } else {
+                // The order from .in() is not guaranteed, so we create a map for ordering
+                const idOrderMap = new Map(favoriteIds.map((id, index) => [id, index]));
+                const sorted = favTemplatesData.sort((a, b) => (idOrderMap.get(a.id) ?? 999) - (idOrderMap.get(b.id) ?? 999));
+                setFavoriteTemplates(sorted || []);
+            }
+        } else {
+            setFavoriteTemplates([]);
         }
 
         // Load portfolios
