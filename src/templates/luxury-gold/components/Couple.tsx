@@ -1,64 +1,94 @@
-import React from 'react';
+
 import { Heart, Instagram, Mail } from 'lucide-react';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface CoupleProps {
   config: WeddingConfig;
 }
 
-const SectionWrapper: React.FC<{ children: React.ReactNode; id: string }> = ({ children, id }) => (
-    <section id={id} className="min-h-screen py-24 px-4 container mx-auto flex flex-col justify-center">
-        {children}
-    </section>
-);
+export default function Couple({ config }: CoupleProps) {
+  const { bride, groom } = config.couple;
 
-const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="text-center mb-16">
-        <h2 className="text-5xl md:text-6xl tracking-tight text-white">{children}</h2>
-        <div className="w-24 h-px bg-yellow-500 mx-auto mt-4"></div>
-    </div>
-);
-
-
-const Couple: React.FC<CoupleProps> = ({ config }) => {
-    const { bride, groom } = config.couple;
-
-    const PersonCard: React.FC<{ person: typeof bride | typeof groom, align: 'left' | 'right' }> = ({ person, align }) => {
-        const alignment = align === 'left' ? 'md:text-left' : 'md:text-right';
-        const itemAlignment = align === 'left' ? 'md:items-start' : 'md:items-end';
-
-        return (
-            <div className="flex flex-col items-center">
-                 <div className="relative mb-6">
-                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full transform scale-105 blur-md opacity-50"></div>
-                    <img src={person.image} alt={person.name} className="relative w-48 h-48 md:w-56 md:h-56 rounded-full object-cover border-4 border-yellow-500 shadow-2xl" />
-                 </div>
-                 <div className={`text-center ${alignment} ${itemAlignment} flex flex-col`}>
-                    <h3 className="text-4xl md:text-5xl text-white">{person.name}</h3>
-                    <p className="text-lg text-gray-300 mt-1">{person.fullName}</p>
-                    <p className="text-sm text-yellow-500 uppercase tracking-widest mt-4">{person.parents}</p>
-                    <p className="text-gray-400 max-w-sm mt-4 leading-relaxed mx-auto md:mx-0">{person.bio}</p>
-                    <div className={`flex items-center space-x-4 mt-6 justify-center ${align === 'left' ? 'md:justify-start' : 'md:justify-end'}`}>
-                        <a href={`https://instagram.com/${person.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-500 transition-colors"><Instagram size={20} /></a>
-                        <a href={`mailto:${person.email}`} className="text-gray-400 hover:text-yellow-500 transition-colors"><Mail size={20} /></a>
-                    </div>
-                 </div>
-            </div>
-        );
-    };
+  const CoupleCard = ({ person, reverse }: { person: typeof bride; reverse?: boolean }) => {
+    const { elementRef, isVisible } = useScrollAnimation();
 
     return (
-        <SectionWrapper id="couple">
-            <SectionTitle>The Couple</SectionTitle>
-            <div className="grid md:grid-cols-3 items-center gap-12 md:gap-8 max-w-6xl mx-auto">
-                <PersonCard person={bride} align="right" />
-                <div className="text-center text-yellow-500 my-8 md:my-0">
-                    <Heart size={60} fill="currentColor" className="mx-auto animate-pulse" style={{ filter: 'drop-shadow(0 0 10px #facc15)'}} />
-                </div>
-                <PersonCard person={groom} align="left" />
-            </div>
-        </SectionWrapper>
-    );
-};
+      <div
+        ref={elementRef}
+        className={`flex flex-col ${
+          reverse ? 'md:flex-row-reverse' : 'md:flex-row'
+        } gap-8 items-center animate-on-scroll ${isVisible ? 'visible' : ''}`}
+      >
+        <div className="md:w-5/12">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-400 to-orange-400 rounded-2xl transform rotate-6 group-hover:rotate-12 transition-transform duration-500"></div>
+            <img
+              src={person.image}
+              alt={person.name}
+              className="relative rounded-2xl w-full h-96 object-cover shadow-xl transform group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+        </div>
 
-export default Couple;
+        <div className="md:w-7/12 text-center md:text-left">
+          <p className="text-rose-500 font-medium mb-2">{person.role}</p>
+          <h3 className="text-4xl md:text-5xl font-serif text-gray-800 mb-2">{person.name}</h3>
+          <p className="text-xl text-gray-600 mb-4 font-light">{person.fullName}</p>
+
+          <div className="flex items-center justify-center md:justify-start space-x-2 mb-6">
+            <div className="h-px w-12 bg-gray-300"></div>
+            <Heart className="text-rose-400" size={16} fill="currentColor" />
+            <div className="h-px w-12 bg-gray-300"></div>
+          </div>
+
+          <p className="text-gray-600 leading-relaxed mb-4">{person.bio}</p>
+
+          <p className="text-gray-500 italic mb-6">{person.parents}</p>
+
+          <div className="flex items-center justify-center md:justify-start space-x-4">
+            <a
+              href={`https://instagram.com/${person.instagram.replace('@', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 text-gray-600 hover:text-rose-500 transition-colors"
+            >
+              <Instagram size={20} />
+              <span className="text-sm">{person.instagram}</span>
+            </a>
+            <a
+              href={`mailto:${person.email}`}
+              className="flex items-center space-x-2 text-gray-600 hover:text-rose-500 transition-colors"
+            >
+              <Mail size={20} />
+              <span className="text-sm">{person.email}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="py-20 bg-gradient-to-br from-orange-50 via-rose-50 to-pink-50">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-serif text-gray-800 mb-4">Perkenalkan Kami</h2>
+          <p className="text-gray-600">Dua Jiwa, Satu Hati</p>
+        </div>
+
+        <div className="max-w-6xl mx-auto space-y-20">
+          <CoupleCard person={bride} />
+
+          <div className="flex justify-center">
+            <div className="bg-white rounded-full p-6 shadow-lg animate-pulse-glow">
+              <Heart className="text-rose-500" size={48} fill="currentColor" />
+            </div>
+          </div>
+
+          <CoupleCard person={groom} reverse />
+        </div>
+      </div>
+    </div>
+  );
+}

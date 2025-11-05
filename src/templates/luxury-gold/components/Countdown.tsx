@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+
+import { useState, useEffect } from 'react';
+import { Clock } from 'lucide-react';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface CountdownProps {
   config: WeddingConfig;
 }
 
-const Countdown: React.FC<CountdownProps> = ({ config }) => {
+export default function Countdown({ config }: CountdownProps) {
   const weddingDate = new Date(`${config.wedding.date}T${config.wedding.time}`).getTime();
 
   const [timeLeft, setTimeLeft] = useState({
-    Days: 0,
-    Hours: 0,
-    Minutes: 0,
-    Seconds: 0,
+    Hari: 0,
+    Jam: 0,
+    Menit: 0,
+    Detik: 0,
   });
 
   useEffect(() => {
@@ -21,10 +23,10 @@ const Countdown: React.FC<CountdownProps> = ({ config }) => {
       const distance = weddingDate - now;
 
       setTimeLeft({
-        Days: Math.max(Math.floor(distance / (1000 * 60 * 60 * 24)), 0),
-        Hours: Math.max(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)), 0),
-        Minutes: Math.max(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)), 0),
-        Seconds: Math.max(Math.floor((distance % (1000 * 60)) / 1000), 0),
+        Hari: Math.max(Math.floor(distance / (1000 * 60 * 60 * 24)), 0),
+        Jam: Math.max(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)), 0),
+        Menit: Math.max(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)), 0),
+        Detik: Math.max(Math.floor((distance % (1000 * 60)) / 1000), 0),
       });
     };
     
@@ -35,28 +37,26 @@ const Countdown: React.FC<CountdownProps> = ({ config }) => {
   }, [weddingDate]);
 
   return (
-    <div className="py-20 bg-[#1f213a]">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-wider text-white mb-3">COUNTDOWN TO FOREVER</h2>
-            <div className="w-24 h-px bg-yellow-500 mx-auto"></div>
-        </div>
-        <div className="flex flex-wrap justify-center gap-4 md:gap-8 max-w-3xl mx-auto">
-          {Object.entries(timeLeft).map(([unit, value]) => (
-            <div key={unit} className="text-center">
-              <div 
-                className="text-5xl md:text-7xl font-semibold text-yellow-500"
-                style={{ textShadow: '0 0 10px rgba(234, 179, 8, 0.5)' }}
-              >
+    <div className="py-16 bg-gradient-to-r from-rose-500 to-orange-500">
+      <div className="container mx-auto px-4 text-center text-white">
+        <Clock size={48} className="mx-auto mb-4" />
+        <h2 className="text-3xl md:text-4xl font-serif mb-12">Menghitung Mundur Menuju Selamanya</h2>
+
+        <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
+          {Object.entries(timeLeft).map(([unit, value], index) => (
+            <div
+              key={unit}
+              className="bg-white/20 backdrop-blur-sm rounded-xl p-6 md:p-8 w-20 md:w-28 hover:bg-white/30 transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fade-in-up flex flex-col items-center justify-center"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="text-4xl md:text-5xl font-bold mb-2 transition-transform duration-300">
                 {value.toString().padStart(2, '0')}
               </div>
-              <div className="text-sm md:text-base uppercase tracking-widest text-gray-400 mt-2">{unit}</div>
+              <div className="text-xs md:text-sm uppercase tracking-wider">{unit}</div>
             </div>
           ))}
         </div>
       </div>
     </div>
   );
-};
-
-export default Countdown;
+}

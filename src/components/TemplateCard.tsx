@@ -190,7 +190,7 @@ export default function TemplateCard({
         </div>
 
         {/* Bottom Action Buttons */}
-        <div className="absolute bottom-4 right-4 flex items-center gap-2">
+        <div className="z-30 absolute bottom-4 right-4 flex items-center gap-2">
           {/* Favorite Button */}
           <button
             onClick={handleToggleFavorite}
@@ -293,16 +293,6 @@ export default function TemplateCard({
             </div>
           </div>
           
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails(template);
-            }}
-            className={`group/btn flex items-center space-x-2 px-5 py-3 rounded-full bg-gradient-to-r ${categoryConfig.gradient} text-white font-semibold shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 ${categoryConfig.glow}`}
-          >
-            <Eye className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-            <span className="text-sm">Lihat</span>
-          </button>
         </div>
 
         {/* Features Preview - Show on hover */}
