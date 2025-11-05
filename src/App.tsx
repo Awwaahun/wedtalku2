@@ -8,15 +8,17 @@ import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import UserPanel from './components/UserPanel';
-import CreateInvitationModal from './components/PurchaseModal'; // Renamed for clarity
+import CreateInvitationModal from './components/PurchaseModal';
 import { WeddingTemplate, PortfolioWithUser } from './lib/supabase';
 import { supabase } from './lib/supabase';
 import { Camera, Sparkles, User as UserIcon } from 'lucide-react';
 import PortfolioGallery from './components/PortfolioGallery';
 import PortfolioDetailModal from './components/PortfolioDetailModal';
 
+// Import Template Viewer
+import TemplateViewer from './components/TemplateViewer';
 
-type ViewMode = 'home' | 'detail' | 'admin' | 'user-panel';
+type ViewMode = 'home' | 'detail' | 'admin' | 'user-panel' | 'template-view';
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -30,16 +32,17 @@ function App() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creationLoading, setCreationLoading] = useState(false);
   
-  // Portfolio States
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
   const [selectedPortfolio, setSelectedPortfolio] = useState<PortfolioWithUser | null>(null);
   const [likedPortfolioIds, setLikedPortfolioIds] = useState<string[]>([]);
-
 
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  // Template viewing state
+  const [templateSlug, setTemplateSlug] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminStatus();
@@ -48,7 +51,6 @@ function App() {
   }, []);
 
   const checkUserSession = async () => {
-    // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
     const { data: { session } } = await (supabase.auth as any).getSession();
     const currentUser = session?.user ?? null;
     setUser(currentUser);
@@ -57,7 +59,7 @@ function App() {
       loadUserData(currentUser.id);
     }
 
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: any, session: any) => {
       const newUser = session?.user ?? null;
       setUser(newUser);
       if (newUser) {
@@ -81,7 +83,7 @@ function App() {
   const loadUserInvitations = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('purchases') // This table now represents created invitations
+        .from('purchases')
         .select('template_id')
         .eq('user_id', userId);
 
@@ -138,7 +140,6 @@ function App() {
 
     const isFavorited = favoriteIds.includes(templateId);
     
-    // Optimistic update for snappy UI
     if (isFavorited) {
       setFavoriteIds(prev => prev.filter(id => id !== templateId));
     } else {
@@ -160,7 +161,6 @@ function App() {
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert optimistic update on error
       if (isFavorited) {
         setFavoriteIds(prev => [...prev, templateId]);
       } else {
@@ -170,57 +170,39 @@ function App() {
     }
   };
 
-const handleRateTemplate = async (templateId: string, rating: number): Promise<boolean> => {
-  const { data: { user } } = await (supabase.auth as any).getUser();
-  if (!user) {
-    setShowAuthModal(true);
-    showNotification('error', 'Silakan login untuk memberikan rating.');
-    return false;
-  }
-
-  try {
-    console.log('handleRateTemplate called:', { templateId, rating, userId: user.id });
-
-    // Upsert the user's rating
-    const { data, error } = await supabase
-      .from('template_ratings')
-      .upsert(
-        { 
-          template_id: templateId, 
-          user_id: user.id, 
-          rating: rating 
-        },
-        { 
-          onConflict: 'template_id,user_id',
-          ignoreDuplicates: false 
-        }
-      )
-      .select();
-
-    if (error) {
-      console.error('handleRateTemplate error:', error);
-      throw error;
+  const handleRateTemplate = async (templateId: string, rating: number): Promise<boolean> => {
+    const { data: { user } } = await (supabase.auth as any).getUser();
+    if (!user) {
+      setShowAuthModal(true);
+      showNotification('error', 'Silakan login untuk memberikan rating.');
+      return false;
     }
 
-    console.log('Rating saved successfully:', data);
-    return true;
-    
-  } catch (error: any) {
-    console.error('Error in handleRateTemplate:', error);
-    
-    // More detailed error logging
-    console.error('Error details:', {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint
-    });
-    
-    showNotification('error', 'Gagal menyimpan rating: ' + (error.message || 'Unknown error'));
-    return false;
-  }
-};
+    try {
+      const { data, error } = await supabase
+        .from('template_ratings')
+        .upsert(
+          { 
+            template_id: templateId, 
+            user_id: user.id, 
+            rating: rating 
+          },
+          { 
+            onConflict: 'template_id,user_id',
+            ignoreDuplicates: false 
+          }
+        )
+        .select();
 
+      if (error) throw error;
+      return true;
+      
+    } catch (error: any) {
+      console.error('Error in handleRateTemplate:', error);
+      showNotification('error', 'Gagal menyimpan rating: ' + (error.message || 'Unknown error'));
+      return false;
+    }
+  };
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await (supabase.auth as any).getUser();
@@ -242,6 +224,11 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
       await checkAdminAccess();
     } else if (path === '/user-panel') {
       await checkUserPanelAccess();
+    } else if (path.startsWith('/invitations/')) {
+      // Handle template viewing route
+      const slug = path.split('/invitations/')[1];
+      setTemplateSlug(slug);
+      setViewMode('template-view');
     }
   };
 
@@ -299,7 +286,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // MAIN INVITATION CREATION HANDLER
   const handleCreateInvitation = async (template: WeddingTemplate) => {
     const { data: { user } } = await (supabase.auth as any).getUser();
     
@@ -321,24 +307,21 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
       const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Generate a unique slug for the invitation URL
       const slug = `${selectedTemplate.title.toLowerCase().replace(/ /g, '-')}-${Date.now().toString().slice(-6)}`;
       const invitationUrl = `/invitations/${slug}`;
 
-      // Insert invitation record
       const { error: creationError } = await supabase
-        .from('purchases') // Using 'purchases' table to store created invitations
+        .from('purchases')
         .insert({
           user_id: user.id,
           template_id: selectedTemplate.id,
-          price_paid: selectedTemplate.price, // Still logging price, could be 0 for a free model
-          access_url: invitationUrl, // Storing the unique URL
+          price_paid: selectedTemplate.price,
+          access_url: invitationUrl,
           status: 'completed'
         });
 
       if (creationError) throw creationError;
 
-      // Update local state
       setCreatedInvitationIds([...createdInvitationIds, selectedTemplate.id]);
 
       setNotification({
@@ -355,14 +338,12 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
     } catch (error: any) {
       console.error('Invitation creation error:', error);
-      
       showNotification('error', 'Gagal membuat undangan. Silakan coba lagi.');
     } finally {
       setCreationLoading(false);
     }
   };
 
-    // --- PORTFOLIO HANDLERS ---
   const handleViewPortfolio = (portfolio: PortfolioWithUser) => {
     setSelectedPortfolio(portfolio);
     setShowPortfolioModal(true);
@@ -382,7 +363,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
     const isLiked = likedPortfolioIds.includes(portfolioId);
 
-    // Optimistic update
     if (isLiked) {
       setLikedPortfolioIds(prev => prev.filter(id => id !== portfolioId));
       if (selectedPortfolio?.id === portfolioId) {
@@ -410,10 +390,9 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
       }
     } catch (error) {
       console.error("Error toggling portfolio like:", error);
-      // Revert on error
       if (isLiked) {
         setLikedPortfolioIds(prev => [...prev, portfolioId]);
-         if (selectedPortfolio?.id === portfolioId) {
+        if (selectedPortfolio?.id === portfolioId) {
           setSelectedPortfolio(p => p ? { ...p, likes_count: p.likes_count + 1 } : null);
         }
       } else {
@@ -427,6 +406,11 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
   };
 
   const renderView = () => {
+    // Template viewer
+    if (viewMode === 'template-view' && templateSlug) {
+      return <TemplateViewer slug={templateSlug} />;
+    }
+
     // Admin panel
     if (viewMode === 'admin') {
       return <AdminPanel />;
@@ -469,10 +453,7 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
     // Home page
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-[#fff4bd]/10 to-[#85d2d0]/10">
-        <Navbar
-          onAuthClick={() => setShowAuthModal(true)}
-        />
-
+        <Navbar onAuthClick={() => setShowAuthModal(true)} />
         <Hero />
 
         <section id="featured" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
@@ -482,9 +463,7 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
                 <Sparkles className="w-5 h-5 text-[#887bb0]" />
                 <span className="text-[#887bb0] font-semibold">Featured Templates</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                Template Pilihan Terbaik
-              </h2>
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">Template Pilihan Terbaik</h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
                 Koleksi template premium yang paling populer dan banyak dipilih oleh pasangan
               </p>
@@ -492,7 +471,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
             <TemplateGrid
               onViewDetails={handleViewDetails}
-// FIX: The `onCreateInvitation` prop is not valid for `TemplateGrid`. Removing it.
               showFeaturedOnly={true}
               createdInvitationIds={createdInvitationIds}
               onGoToUserPanel={handleGoToUserPanel}
@@ -505,13 +483,11 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
         <section id="portfolios" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth bg-gradient-to-r from-[#f4b9b8]/10 via-white to-[#85d2d0]/10">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
-               <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#fff4bd]/20 mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#85d2d0]/20 to-[#fff4bd]/20 mb-4">
                 <Camera className="w-5 h-5 text-[#887bb0]" />
                 <span className="text-[#887bb0] font-semibold">Portfolio Inspirasi</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                Kisah Nyata, Momen Indah
-              </h2>
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">Kisah Nyata, Momen Indah</h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
                 Lihat bagaimana pasangan lain mewujudkan pernikahan impian mereka dengan template kami.
               </p>
@@ -527,9 +503,7 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
         <section id="templates" className="top-10 relative pt-20 sm:pt-24 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-smooth">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                Semua Template
-              </h2>
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">Semua Template</h2>
               <p className="text-gray-600 max-w-2xl mx-auto mb-8">
                 Jelajahi koleksi lengkap template undangan pernikahan digital kami
               </p>
@@ -542,7 +516,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
             <TemplateGrid
               onViewDetails={handleViewDetails}
-// FIX: The `onCreateInvitation` prop is not valid for `TemplateGrid`. Removing it.
               filterCategory={selectedCategory}
               createdInvitationIds={createdInvitationIds}
               onGoToUserPanel={handleGoToUserPanel}
@@ -554,9 +527,7 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
 
         <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#f4b9b8]/10 via-[#887bb0]/10 to-[#85d2d0]/10">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-bold text-gray-800 mb-6">
-              Mengapa Memilih Kami?
-            </h2>
+            <h2 className="text-4xl font-bold text-gray-800 mb-6">Mengapa Memilih Kami?</h2>
             <p className="text-lg text-gray-600 mb-12">
               Kami menyediakan platform undangan pernikahan digital berkualitas tinggi yang mudah dikustomisasi
               dan siap pakai untuk hari spesial Anda.
@@ -612,8 +583,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
         />
       )}
 
-
-      {/* Notification */}
       {notification && (
         <div className={`fixed top-20 right-4 z-50 px-6 py-4 rounded-2xl shadow-2xl animate-slideIn max-w-md ${
           notification.type === 'success' 
@@ -648,7 +617,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
         </div>
       )}
 
-      {/* Create Invitation Confirmation Modal */}
       <CreateInvitationModal
         show={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -657,7 +625,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
         loading={creationLoading}
       />
 
-      {/* Admin Access Button */}
       {isAdmin && viewMode === 'home' && (
         <button
           onClick={() => {
@@ -671,7 +638,6 @@ const handleRateTemplate = async (templateId: string, rating: number): Promise<b
         </button>
       )}
 
-      {/* User Panel Access Button */}
       {user && viewMode === 'home' && (
         <button
           onClick={handleGoToUserPanel}

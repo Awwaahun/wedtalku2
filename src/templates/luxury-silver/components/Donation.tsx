@@ -1,193 +1,182 @@
 import { useState, useEffect } from 'react';
-import { Gift, Copy, Check, CreditCard, Wallet, QrCode, Heart, X, Sparkles } from 'lucide-react';
+import { Gift, Copy, Check, CreditCard, Wallet, QrCode } from 'lucide-react';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
-const Donation = ({ config }) => {
-  const [copiedAccount, setCopiedAccount] = useState(null);
-  const [selectedQR, setSelectedQR] = useState(null);
-  const [qrCodes, setQrCodes] = useState({});
-  const [hoveredCard, setHoveredCard] = useState(null);
+interface DonationProps {
+  config: WeddingConfig;
+}
 
-  const accounts = (config?.donations || []).map(account => ({
+export default function Donation({ config }: DonationProps) {
+  const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
+  const [selectedQR, setSelectedQR] = useState<string | null>(null);
+  const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
+  
+  const accounts = config.donations.map(account => ({
     ...account,
     icon: account.type === 'Bank Account' ? CreditCard : Wallet,
   }));
 
   useEffect(() => {
-    const codes = {};
-    for (const account of accounts) {
-      const qrData = `${account.bank}|${account.accountName}|${account.accountNumber}`;
-      codes[account.id] = account.qrUrl
-        ? account.qrUrl
-        : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+    const generateQRCodes = async () => {
+      const codes: Record<string, string> = {};
+      for (const account of accounts) {
+        if (account.qrUrl) {
+          codes[account.id] = account.qrUrl;
+        } else {
+          const qrData = `${account.bank}|${account.accountName}|${account.accountNumber}`;
+          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+          codes[account.id] = qrUrl;
+        }
+      }
+      setQrCodes(codes);
+    };
+    if (accounts.length > 0) {
+      generateQRCodes();
     }
-    setQrCodes(codes);
-  }, [accounts.length]);
+  }, [accounts]);
 
-  const copyToClipboard = (text, accountId) => {
+  const copyToClipboard = (text: string, accountId: string) => {
     navigator.clipboard.writeText(text);
     setCopiedAccount(accountId);
     setTimeout(() => setCopiedAccount(null), 2000);
   };
 
+  const { elementRef, isVisible } = useScrollAnimation();
+
   return (
-    <div className="relative py-24 md:py-32 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
-      {/* Floating Glow */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 w-[600px] h-[600px] bg-sky-400/10 blur-[200px] -translate-x-1/2" />
-        <div className="absolute bottom-0 right-1/2 w-[400px] h-[400px] bg-slate-500/10 blur-[180px] translate-x-1/2" />
-      </div>
-
-      {/* Animated Sparkles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(16)].map((_, i) => (
-          <Sparkles
-            key={i}
-            className="absolute text-sky-300/40 animate-pulse"
-            size={12 + Math.random() * 10}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.8}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10 text-center">
-        {/* Header */}
-        <div className="mb-16">
-          <div className="inline-flex items-center justify-center bg-white/10 backdrop-blur-md p-6 rounded-full border border-white/20 mb-8">
-            <Gift className="text-sky-300 animate-pulse" size={48} />
+    <div className="py-20 bg-white">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16">
+          <div className="flex justify-center mb-4">
+            <div className="bg-gradient-to-br from-rose-100 to-orange-100 p-6 rounded-full animate-pulse-glow">
+              <Gift className="text-rose-600" size={48} />
+            </div>
           </div>
-          <h2 className="text-4xl md:text-6xl font-serif text-white drop-shadow mb-4">
-            Beri Dukungan Istimewa
-          </h2>
-          <p className="text-slate-300 text-lg max-w-2xl mx-auto leading-relaxed">
-            Kehadiran Anda adalah hadiah terbaik bagi kami. Namun jika berkenan, 
-            Anda juga dapat memberikan dukungan sebagai bentuk kasih dan doa.
+          <h2 className="text-4xl md:text-5xl font-serif text-gray-800 mb-4">Beri Dukungan Istimewa</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Kehadiran Anda di pernikahan kami adalah hadiah terindah. Namun, jika Anda ingin memberikan hadiah,
+kami dengan senang hati akan menerima untuk masa depan kita bersama.
           </p>
         </div>
 
-        {/* Donation Cards */}
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mb-16">
+        <div
+          ref={elementRef}
+          className={`relative z-[30] max-w-4xl mx-auto grid md:grid-cols-2 gap-6 animate-on-scroll ${isVisible ? 'visible' : ''}`}
+        >
           {accounts.map((account, index) => (
             <div
               key={account.id}
-              className="group relative"
-              onMouseEnter={() => setHoveredCard(index)}
-              onMouseLeave={() => setHoveredCard(null)}
+              className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-100 rounded-xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* Glow */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-sky-400/10 to-slate-500/10 blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-              {/* Glass Box */}
-              <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 text-left transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-sky-500 to-slate-500 p-4 rounded-2xl shadow-lg">
-                    <account.icon className="text-white" size={32} />
-                  </div>
-                  <div>
-                    <p className="text-slate-300 text-sm">{account.type}</p>
-                    <p className="text-2xl font-bold text-white">{account.bank}</p>
-                  </div>
+              <div className="flex items-center mb-4">
+                <div className="bg-rose-100 p-3 rounded-full mr-4">
+                  <account.icon className="text-rose-600" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">{account.type}</p>
+                  <p className="font-semibold text-gray-800">{account.bank}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Account Name</p>
+                  <p className="font-medium text-gray-800">{account.accountName}</p>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
-                    <p className="text-xs text-slate-300 mb-1">Nama Rekening</p>
-                    <p className="text-lg font-semibold text-white">{account.accountName}</p>
-                  </div>
-
-                  <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
-                    <p className="text-xs text-slate-300 mb-2">Nomor Rekening</p>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-white font-mono text-lg">{account.accountNumber}</p>
-                      <button
-                        onClick={() => copyToClipboard(account.accountNumber, account.id)}
-                        className={`p-2 rounded-xl transition-all ${
-                          copiedAccount === account.id
-                            ? 'bg-green-500 text-white'
-                            : 'bg-sky-500/80 hover:bg-sky-400 text-white'
-                        }`}
-                      >
-                        {copiedAccount === account.id ? <Check size={20} /> : <Copy size={20} />}
-                      </button>
-                    </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Account Number</p>
+                  <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                    <p className="font-mono font-semibold text-gray-800">{account.accountNumber}</p>
+                    <button
+                      onClick={() => copyToClipboard(account.accountNumber, account.id)}
+                      className="ml-2 p-2 hover:bg-rose-100 rounded-lg transition-colors group"
+                      title="Copy to clipboard"
+                    >
+                      {copiedAccount === account.id ? (
+                        <Check className="text-green-600" size={20} />
+                      ) : (
+                        <Copy className="text-gray-600 group-hover:text-rose-600 transition-colors" size={20} />
+                      )}
+                    </button>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setSelectedQR(account.id)}
-                  className="w-full mt-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-slate-500 text-white font-semibold hover:scale-[1.02] transition-transform"
+                  className="w-full mt-4 flex items-center justify-center space-x-2 bg-rose-500 hover:bg-rose-600 text-white py-3 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 >
-                  <QrCode className="inline-block mr-2" size={22} />
-                  Lihat QR Code
+                  <QrCode size={20} />
+                  <span>Show QR Code</span>
                 </button>
               </div>
-
-              {/* Hover Sparkles */}
-              {hoveredCard === index && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(6)].map((_, i) => (
-                    <Sparkles
-                      key={i}
-                      className="absolute text-sky-200 animate-ping"
-                      size={12}
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${i * 0.2}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           ))}
         </div>
 
-        {/* Note Box */}
-        <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Heart className="text-sky-400" size={28} fill="currentColor" />
-            <h3 className="text-2xl font-serif text-white">Terima Kasih</h3>
-            <Heart className="text-sky-400" size={28} fill="currentColor" />
+        <div className="text-center mt-12">
+          <div className="inline-block bg-rose-50 rounded-lg p-6 max-w-2xl">
+            <p className="text-gray-700 leading-relaxed">
+              <span className="font-semibold text-rose-600">Catatan:</span> Hadiah dan dukungan Anda akan membantu kita memulai
+babak baru bersama. Terima kasih telah menjadi bagian dari hari istimewa kami dan atas cinta serta dukungan Anda.
+            </p>
           </div>
-          <p className="text-slate-300 text-lg leading-relaxed">
-            Dukungan dan doa Anda adalah bagian penting dari perjalanan kami.
-            Terima kasih atas cinta dan perhatian yang telah diberikan 💙
-          </p>
         </div>
       </div>
 
-      {/* QR Modal */}
+      {/* QR Code Modal */}
       {selectedQR && (
         <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setSelectedQR(null)}
         >
           <div
-            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 max-w-md w-full text-center"
+            className="bg-white rounded-2xl p-8 max-w-md w-full animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setSelectedQR(null)}
-              className="absolute top-4 right-4 p-2 bg-white/20 rounded-full hover:bg-white/30"
-            >
-              <X className="text-white" size={22} />
-            </button>
-            <h3 className="text-2xl font-serif text-white mb-6">Scan QR Code</h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-serif text-gray-800">Scan QR Code</h3>
+              <button
+                onClick={() => setSelectedQR(null)}
+                className="text-gray-500 hover:text-rose-600 transition-colors"
+              >
+                <Check size={24} />
+              </button>
+            </div>
+
             {qrCodes[selectedQR] && (
-              <img
-                src={qrCodes[selectedQR]}
-                alt="QR"
-                className="w-64 h-64 mx-auto rounded-2xl border border-white/20 shadow-lg"
-              />
+              <div className="text-center">
+                <div className="bg-white p-4 rounded-lg border-4 border-rose-100 inline-block mb-4">
+                  <img
+                    src={qrCodes[selectedQR]}
+                    alt="QR Code"
+                    className="w-64 h-64"
+                  />
+                </div>
+                <div className="mt-4">
+                  {accounts.map((account) => {
+                    if (account.id === selectedQR) {
+                      return (
+                        <div key={account.id} className="text-left bg-gray-50 rounded-lg p-4">
+                          <p className="text-sm text-gray-500">{account.bank}</p>
+                          <p className="font-semibold text-gray-800">{account.accountName}</p>
+                          <p className="font-mono text-gray-700">{account.accountNumber}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  Scan this QR code with your banking app to send a gift
+                </p>
+              </div>
             )}
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default Donation;
+}

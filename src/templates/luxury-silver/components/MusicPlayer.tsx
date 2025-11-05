@@ -126,12 +126,12 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
       </div>
 
       {/* Main Player Controls */}
-      <div className="fixed bottom-6 left-4 translate-x-0 md:left-6 md:translate-x-0 flex items-center z-50">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-6 md:translate-x-0 flex items-center z-50">
         
         {/* Main Toggle Button */}
         <button
           onClick={() => setShowControls(!showControls)}
-          className="relative bg-gradient-to-br from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white w-11 h-11 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+          className="relative bg-gradient-to-br from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white w-16 h-16 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-110"
           title="Buka Kontrol Musik"
         >
           {autoplayBlocked && !hasInteracted && (

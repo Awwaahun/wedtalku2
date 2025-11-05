@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, Loader2, Sparkles } from 'lucide-react';
-import { generateIslamicWeddingPrayer } from '../services/geminiService';
+import { generateIslamicWeddingPrayer } from '../geminiService';
 
 const PrayerDisplay: React.FC = () => {
   const [prayer, setPrayer] = useState<string | null>(null);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Users, Calendar, MapPin, Music, Image, Gift, Settings, LogOut, Heart, Sparkles, Film, FileJson, Upload, Download, Palette, Mail, BookOpen, Send, PlusCircle, Trash2, FileUp, Loader2 } from 'lucide-react';
 import type { WeddingConfig } from '../hooks/useWeddingConfig';
-import supabase from '../lib/supabase';
+import { supabase } from '../supabase';
 
 interface ClientDashboardProps {
   isOpen: boolean;

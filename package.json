@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@google/genai": "^1.28.0",
     "@supabase/supabase-js": "^2.57.4",
     "browserslist": "^4.26.3",
     "git": "^0.1.5",

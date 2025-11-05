@@ -12,14 +12,14 @@ import GuestBook from './components/GuestBook';
 import LoadingScreen from './components/LoadingScreen';
 import InvitationModal from './components/InvitationModal';
 import FloralDecorations from './components/FloralDecorations';
-import { useInvitation } from '../hooks/useInvitation';
+import { useInvitation } from './hooks/useInvitation';
 import MusicPlayer from './components/MusicPlayer';
 import PrayerDisplay from './components/PrayerDisplay';
 import PrayerLetter from './components/PrayerLetter';
 import CinematicIntro from './components/CinematicIntro';
-import { useWeddingConfig, type WeddingConfig } from '../hooks/useWeddingConfig';
-import LoginModal from '../components/LoginModal';
-import ClientDashboard from '../components/ClientDashboard';
+import { useWeddingConfig, type WeddingConfig } from './hooks/useWeddingConfig';
+import LoginModal from './components/LoginModal';
+import ClientDashboard from './components/ClientDashboard';
 
 
 function App() {
