@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen } from 'lucide-react';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface PrayerLetterProps {
   config: WeddingConfig;

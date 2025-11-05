@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface CinematicIntroProps {
   show: boolean;

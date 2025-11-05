@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 type Image = WeddingConfig['gallery'][number];
 type FilterType = 'all' | 'portrait' | 'landscape';

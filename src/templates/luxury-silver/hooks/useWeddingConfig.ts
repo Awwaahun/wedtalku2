@@ -125,24 +125,24 @@ export const useWeddingConfig = (): WeddingConfig => {
   const config = useMemo<WeddingConfig>(() => ({
     couple: {
       bride: {
-        name: 'Sarah',
-        fullName: 'Sarah Anggraini',
+        name: 'Putri',
+        fullName: 'Bunga Sariputri',
         role: 'Mempelai Wanita',
-        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761360042561.png',
+        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250582504.png?auto=compress&cs=tinysrgb&w=800',
         bio: 'Seorang arsitek penuh semangat yang mencintai seni, kopi, dan menjelajahi tempat-tempat tersembunyi di seluruh dunia.',
         parents: 'Putri dari Bapak Dedy & Ibu Martina',
-        instagram: '@sarahanggraini',
-        email: 'sarah@example.com',
+        instagram: '@bungasariputri',
+        email: 'putri@example.com',
       },
       groom: {
-        name: 'Adam',
-        fullName: 'Adam Kurniawan',
+        name: 'Budi',
+        fullName: 'Budi Laksono',
         role: 'Mempelai Pria',
-        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761360103526.png',
+        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250574822.png?auto=compress&cs=tinysrgb&w=800',
         bio: 'Seorang Software Engineer yang gemar mendaki, fotografi, dan memasak resep-resep baru.',
         parents: 'Putra dari Bapak Martono & Ibu Widya',
-        instagram: '@adamkurniawan',
-        email: 'adam@example.com',
+        instagram: '@budilaksono',
+        email: 'budi@example.com',
       },
     },
 
@@ -190,24 +190,24 @@ export const useWeddingConfig = (): WeddingConfig => {
         title: 'Pertemuan Pertama',
         date: 'Musim Semi 2019',
         description: 'Kisah kami bermula di sebuah kedai kopi yang nyaman di suatu sore yang hujan.',
-        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761360226419.jpg',
+        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250606108.png?auto=compress&cs=tinysrgb&w=800',
       },
       {
         title: 'Kencan Pertama',
         date: 'Musim Panas 2019',
         description: 'Kencan resmi pertama kami adalah jalan-jalan di kebun raya.',
-        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761360138736.jpg',
+        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250618766.png?auto=compress&cs=tinysrgb&w=800',
       },
       {
         title: 'Lamaran',
         date: 'Musim Dingin 2023',
         description: 'Di bawah langit berbintang di atas gedung rooftop yang indah, Adam berlutut.',
-        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761360170523.jpg',
+        image: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250633509.png?auto=compress&cs=tinysrgb&w=800',
       },
     ],
 
     music: {
-      audioSrc: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-musics/1acef5c0-3015-4baa-9fcd-bf499db50436/1761362901387.mp3',
+      audioSrc: 'https://files.catbox.moe/phz0pi.mp3',
       lyrics: [
         { time: 19, text: "Your morning eyes, I could stare like watching stars" },
         { time: 26, text: "I could walk you by, and I'll tell without a thought" },
@@ -235,18 +235,15 @@ export const useWeddingConfig = (): WeddingConfig => {
     },
 
     gallery: [
-      { url: 'https://picsum.photos/seed/gal1/600/800', type: 'portrait', title: 'Couple by the Sea' },
-      { url: 'https://picsum.photos/seed/gal2/800/600', type: 'landscape', title: 'Lakeside Vows' },
-      { url: 'https://picsum.photos/seed/gal3/600/800', type: 'portrait', title: 'First Dance' },
-      { url: 'https://picsum.photos/seed/gal4/800/600', type: 'landscape', title: 'Sunset Kiss' },
-      { url: 'https://picsum.photos/seed/gal5/600/800', type: 'portrait', title: 'Bridal Portrait' },
-      { url: 'https://picsum.photos/seed/gal6/800/600', type: 'landscape', title: 'Walk to Remember' },
-      { url: 'https://picsum.photos/seed/gal7/600/800', type: 'portrait', title: 'Joyful Embrace' },
-      { url: 'https://picsum.photos/seed/gal8/800/600', type: 'landscape', title: 'Autumn Love' },
-      { url: 'https://picsum.photos/seed/gal9/600/800', type: 'portrait', title: 'Candid Laughter' },
-      { url: 'https://picsum.photos/seed/gal10/800/600', type: 'landscape', title: 'Beach Romance' },
-      { url: 'https://picsum.photos/seed/gal11/600/800', type: 'portrait', title: 'Shared Secrets' },
-      { url: 'https://picsum.photos/seed/gal12/800/600', type: 'landscape', title: 'Holding Hands' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250867425.png?auto=compress&cs=tinysrgb&w=800&h=600', type: 'landscape', title: 'Rekonsilisasi' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250857894.png?auto=compress&cs=tinysrgb&w=800&h=600', type: 'landscape', title: 'Pertemuan Keluarga' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250847153.png?auto=compress&cs=tinysrgb&w=800&h=600', type: 'landscape', title: 'Momen Santai' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250831745.png?auto=compress&cs=tinysrgb&w=800&h=600', type: 'landscape', title: 'Pegunungan' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250815277.png?auto=compress&cs=tinysrgb&w=800&h=600', type: 'landscape', title: 'Persiapan Pernikahan' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250801930.png?auto=compress&cs=tinysrgb&w=600&h=800', type: 'portrait', title: 'Makan Bersama' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250786526.png?auto=compress&cs=tinysrgb&w=600&h=800', type: 'portrait', title: 'Liburan Pantai' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250756921.png?auto=compress&cs=tinysrgb&w=600&h=800', type: 'portrait', title: 'Kiss Love' },
+      { url: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250650392.png?auto=compress&cs=tinysrgb&w=600&h=800', type: 'portrait', title: 'Belajar Bersama' },
     ],
 
     donations: [
@@ -255,7 +252,7 @@ export const useWeddingConfig = (): WeddingConfig => {
         type: 'Bank Account',
         bank: 'Bank Central Asia',
         accountNumber: '1234567890',
-        accountName: 'Sarah Anggraini',
+        accountName: 'Bunga Sariputri',
         qrUrl: '',
       },
       {
@@ -263,7 +260,7 @@ export const useWeddingConfig = (): WeddingConfig => {
         type: 'Bank Account',
         bank: 'Bank Central Asia',
         accountNumber: '0987654321',
-        accountName: 'Adam Kurniawan',
+        accountName: 'Budi Laksono',
         qrUrl: '',
       },
       {
@@ -271,7 +268,7 @@ export const useWeddingConfig = (): WeddingConfig => {
         type: 'E-Wallet',
         bank: 'OVO',
         accountNumber: '+62-555-0123',
-        accountName: 'Sarah Anggraini',
+        accountName: 'Bunga Sariputri',
         qrUrl: '',
       },
       {
@@ -279,18 +276,18 @@ export const useWeddingConfig = (): WeddingConfig => {
         type: 'E-Wallet',
         bank: 'GoPay',
         accountNumber: '+62-555-0124',
-        accountName: 'Adam Kurniawan',
+        accountName: 'Budi Laksono',
         qrUrl: '',
       },
     ],
 
     hero: {
-      backgroundImage: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/1acef5c0-3015-4baa-9fcd-bf499db50436/1761360273278.jpg',
+      backgroundImage: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-images/bce5e8b9-a9e5-4092-ba5a-6d20c534a01c/1762250466395.png?auto=compress&cs=tinysrgb&w=600&h=800',
       tagline: 'Bersama keluarga kami, kami mengundang Anda untuk merayakan cinta kami',
     },
 
     cinematic: {
-      videoSrc: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-videos/1acef5c0-3015-4baa-9fcd-bf499db50436/1761361327872.mp4',
+      videoSrc: 'https://files.catbox.moe/btzeyc.mp4',
       doorImage: 'https://files.catbox.moe/iix5a0.svg',
     },
     
@@ -298,7 +295,7 @@ export const useWeddingConfig = (): WeddingConfig => {
       title: "Kamu Telah Diundang Ke Pernikahan",
       subtitle: 'Kepada Teman dan Keluarga besar, Kami Mengundang',
       buttonText: 'Buka Undangan',
-      backgroundVideo: 'https://pdjgcmcpdyosofpbjqfp.supabase.co/storage/v1/object/public/user-videos/1acef5c0-3015-4baa-9fcd-bf499db50436/1761361327872.mp4',
+      backgroundVideo: 'https://files.catbox.moe/btzeyc.mp4',
     },
     
       prayerLetter: {

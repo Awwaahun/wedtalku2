@@ -1,17 +1,12 @@
+
 import { Calendar, MapPin, Clock, Navigation, Phone, Mail, Car, Info } from 'lucide-react';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useState, useEffect } from 'react';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface EventDetailsProps {
   config: WeddingConfig;
 }
-
-const getIconForEvent = (title: string) => {
-  if (title.toLowerCase().includes('akad')) return Calendar;
-  if (title.toLowerCase().includes('resepsi')) return Clock;
-  return Info;
-};
 
 export default function EventDetails({ config }: EventDetailsProps) {
   const [activeEvent, setActiveEvent] = useState(0);
@@ -47,6 +42,12 @@ export default function EventDetails({ config }: EventDetailsProps) {
 
   const { elementRef, isVisible } = useScrollAnimation();
   
+  const getIconForEvent = (title: string) => {
+    if (title.toLowerCase().includes('akad')) return Calendar;
+    if (title.toLowerCase().includes('resepsi')) return Clock;
+    return Info;
+  };
+
   return (
     <div className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-orange-50 via-rose-50 to-pink-50 overflow-hidden relative">
       {/* Floating Decorations */}

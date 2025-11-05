@@ -1,6 +1,7 @@
+
 import { Heart, Instagram, Mail } from 'lucide-react';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface CoupleProps {
   config: WeddingConfig;

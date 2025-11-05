@@ -54,7 +54,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
             </div>
             <div>
               <h2 className="text-2xl font-serif font-bold">Admin Login</h2>
-              <p className="text-sm text-white/80">Access Wedding Configuration</p>
+              <p className="text-sm text-white/80">Akses Konfigurasi Pernikahan</p>
             </div>
           </div>
         </div>
@@ -100,12 +100,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-            <p className="font-semibold mb-1">Default Credentials:</p>
-            <p>Username: <span className="font-mono">admin</span></p>
-            <p>Password: <span className="font-mono">wedding2025</span></p>
-          </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -117,7 +111,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
 
         <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-100">
           <p className="text-xs text-gray-500 text-center">
-            This dashboard allows you to configure your wedding website settings
+            Dasbor ini akan menuju ke pengaturan konfigurasi situs web pernikahan Anda
           </p>
         </div>
       </div>

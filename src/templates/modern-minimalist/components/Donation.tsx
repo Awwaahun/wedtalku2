@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Gift, Copy, Check, CreditCard, Wallet, QrCode } from 'lucide-react';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface DonationProps {
   config: WeddingConfig;
@@ -12,10 +12,10 @@ export default function Donation({ config }: DonationProps) {
   const [selectedQR, setSelectedQR] = useState<string | null>(null);
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
   
-  const accounts = useMemo(() => config.donations.map(account => ({
+  const accounts = config.donations.map(account => ({
     ...account,
     icon: account.type === 'Bank Account' ? CreditCard : Wallet,
-  })), [config.donations]);
+  }));
 
   useEffect(() => {
     const generateQRCodes = async () => {

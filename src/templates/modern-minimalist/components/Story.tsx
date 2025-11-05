@@ -1,7 +1,8 @@
+
 import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface StoryProps {
   config: WeddingConfig;

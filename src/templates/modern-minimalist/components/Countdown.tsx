@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
-import type { WeddingConfig } from '../../hooks/useWeddingConfig';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface CountdownProps {
   config: WeddingConfig;
