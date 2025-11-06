@@ -23,6 +23,8 @@ export interface WeddingTemplate {
   updated_at: string;
   avg_rating: number;
   rating_count: number;
+  template_code: string;
+  portfolio_count?: number;
 }
 
 export interface Profile {
@@ -111,3 +113,6 @@ export interface PortfolioLike {
     user_id: string;
     created_at: string;
 }
+
+export type TemplateComponent = React.LazyExoticComponent<React.ComponentType<any>>;
+export type TemplateRegistry = Record<string, TemplateComponent>;

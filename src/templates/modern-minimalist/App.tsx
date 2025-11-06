@@ -20,7 +20,7 @@ import CinematicIntro from './components/CinematicIntro';
 import { useWeddingConfig, type WeddingConfig } from './hooks/useWeddingConfig';
 import LoginModal from './components/LoginModal';
 import ClientDashboard from './components/ClientDashboard';
-
+import './index.css';
 
 function App() {
   const initialConfig = useWeddingConfig();

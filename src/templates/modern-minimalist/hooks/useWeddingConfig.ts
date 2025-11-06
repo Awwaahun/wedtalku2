@@ -119,6 +119,13 @@ export interface WeddingConfig {
     secondary: string;
     accent: string;
   };
+  
+  fonts?: {
+    heading: string;
+    body: string;
+    script?: string;
+  };
+  
 }
 
 export const useWeddingConfig = (): WeddingConfig => {
@@ -314,6 +321,13 @@ export const useWeddingConfig = (): WeddingConfig => {
       secondary: '#f97316', // orange-500
       accent: '#ec4899', // pink-500
     },
+    
+    fonts: {
+      heading: 'Playfair Display, serif',
+      body: 'Montserrat, sans-serif',
+      script: 'Great Vibes, cursive',
+    },
+    
   }), []);
 
   return config;
