@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Loader2, Image as ImageIcon, User, Calendar, MapPin, BookOpen, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
+import { X, Save, Loader2, Image as ImageIcon, User, Calendar, MapPin, BookOpen, Trash2, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase, UserPortfolio, UserMedia } from '../lib/supabase';
 
 interface UserInvitation {
@@ -40,6 +40,7 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
   const [activePhotoPicker, setActivePhotoPicker] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [generatedSlug, setGeneratedSlug] = useState('');
 
   useEffect(() => {
     if (existingPortfolio) {
@@ -56,13 +57,31 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
         is_published: existingPortfolio.is_published || false,
       });
     } else {
-      // Set default invitation URL from the invitation
       setFormData(prev => ({
         ...prev,
         invitation_url: invitation.access_url || ''
       }));
     }
   }, [existingPortfolio, invitation.access_url]);
+
+  // Generate slug ketika nama berubah
+  useEffect(() => {
+    if (formData.groom_name && formData.bride_name) {
+      const groomFirstName = formData.groom_name.split(' ')[0].toLowerCase();
+      const brideFirstName = formData.bride_name.split(' ')[0].toLowerCase();
+      
+      let slug = `${groomFirstName}-${brideFirstName}`;
+      
+      slug = slug
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      setGeneratedSlug(slug);
+    }
+  }, [formData.groom_name, formData.bride_name]);
 
   const handleSelectPhoto = (url: string) => {
     if (activePhotoPicker) {
@@ -78,17 +97,58 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
       const { data: { user } } = await (supabase.auth as any).getUser();
       if (!user) throw new Error('User not authenticated');
       
+      // Generate slug dari nama
+      const groomFirstName = formData.groom_name.split(' ')[0].toLowerCase();
+      const brideFirstName = formData.bride_name.split(' ')[0].toLowerCase();
+      
+      let slug = `${groomFirstName}-${brideFirstName}`;
+      
+      // Bersihkan slug
+      slug = slug
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      const newInvitationUrl = `/invitations/${slug}`;
+      
+      // Cek apakah slug sudah digunakan oleh user lain
+      const { data: existingInvitation } = await supabase
+        .from('purchases')
+        .select('id, user_id')
+        .eq('access_url', newInvitationUrl)
+        .single();
+      
+      let finalUrl = newInvitationUrl;
+      
+      // Jika slug sudah ada dan bukan milik user ini, tambahkan angka
+      if (existingInvitation && existingInvitation.user_id !== user.id) {
+        const randomNum = Math.floor(Math.random() * 9999);
+        finalUrl = `/invitations/${slug}-${randomNum}`;
+      }
+      
       const portfolioData = {
         ...formData,
         user_id: user.id,
         template_id: invitation.template_id,
       };
 
-      const { error } = await supabase
+      const { error: portfolioError } = await supabase
         .from('user_portfolios')
         .upsert(portfolioData, { onConflict: 'user_id,template_id' });
         
-      if (error) throw error;
+      if (portfolioError) throw portfolioError;
+      
+      // Update access_url di tabel purchases
+      const { error: purchaseError } = await supabase
+        .from('purchases')
+        .update({ access_url: finalUrl })
+        .eq('user_id', user.id)
+        .eq('template_id', invitation.template_id);
+      
+      if (purchaseError) throw purchaseError;
+      
       onSave();
     } catch (error) {
       console.error('Error saving portfolio:', error);
@@ -177,9 +237,11 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
     );
   }
 
-  const fullInvitationUrl = formData.invitation_url.startsWith('http') 
-    ? formData.invitation_url 
-    : `${window.location.origin}${formData.invitation_url}`;
+  const fullInvitationUrl = generatedSlug 
+    ? `${window.location.origin}/invitations/${generatedSlug}`
+    : formData.invitation_url.startsWith('http') 
+      ? formData.invitation_url 
+      : `${window.location.origin}${formData.invitation_url}`;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -210,7 +272,7 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nama Mempelai Pria
+                    Nama Mempelai Pria *
                   </label>
                   <input 
                     type="text" 
@@ -218,11 +280,12 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
                     onChange={e => setFormData({...formData, groom_name: e.target.value})} 
                     className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
                     required 
+                    placeholder="contoh: Adam Kurniawan"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nama Mempelai Wanita
+                    Nama Mempelai Wanita *
                   </label>
                   <input 
                     type="text" 
@@ -230,6 +293,7 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
                     onChange={e => setFormData({...formData, bride_name: e.target.value})} 
                     className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
                     required 
+                    placeholder="contoh: Sarah Anggraini"
                   />
                 </div>
               </div>
@@ -261,22 +325,36 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Link Undangan Website
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-purple-600" />
+                  Link Undangan Website (Auto-Generated)
                 </label>
                 <div className="space-y-2">
-                  <input 
-                    type="url" 
-                    value={formData.invitation_url} 
-                    onChange={e => setFormData({...formData, invitation_url: e.target.value})} 
-                    placeholder={invitation.access_url || "https://example.com/invitation"} 
-                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none" 
-                  />
-                  {formData.invitation_url && (
+                  {generatedSlug && (
+                    <div className="flex items-start space-x-2 p-3 rounded-lg bg-green-50 border border-green-200">
+                      <AlertCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-green-700 flex-1">
+                        <p className="font-semibold mb-1">✓ URL Otomatis Dibuat dari Nama:</p>
+                        <a 
+                          href={fullInvitationUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="underline hover:text-green-800 break-all block"
+                        >
+                          {fullInvitationUrl}
+                        </a>
+                        <p className="text-xs mt-2 opacity-80">
+                          URL ini dibuat otomatis dari nama panggilan: <strong>{formData.groom_name.split(' ')[0]}</strong> & <strong>{formData.bride_name.split(' ')[0]}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!generatedSlug && formData.invitation_url && (
                     <div className="flex items-start space-x-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
                       <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-blue-700">
-                        <p className="font-semibold mb-1">Preview URL:</p>
+                        <p className="font-semibold mb-1">Current URL:</p>
                         <a 
                           href={fullInvitationUrl} 
                           target="_blank" 
@@ -340,7 +418,7 @@ const PortfolioFormModal: React.FC<PortfolioFormModalProps> = ({
             )}
             <button 
               type="submit" 
-              disabled={saving} 
+              disabled={saving || !formData.groom_name || !formData.bride_name} 
               className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-semibold hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
             >
               {saving ? <Loader2 className="w-5 h-5 animate-spin"/> : <Save className="w-5 h-5"/>}

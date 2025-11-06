@@ -299,50 +299,95 @@ function App() {
     setShowCreateModal(true);
   };
 
-  const confirmCreateInvitation = async () => {
-    if (!selectedTemplate) return;
+// Perubahan pada fungsi confirmCreateInvitation di src/App.tsx
 
-    setCreationLoading(true);
-    try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      if (!user) throw new Error('User not authenticated');
+const confirmCreateInvitation = async () => {
+  if (!selectedTemplate) return;
 
-      const slug = `${selectedTemplate.title.toLowerCase().replace(/ /g, '-')}-${Date.now().toString().slice(-6)}`;
-      const invitationUrl = `/invitations/${slug}`;
+  setCreationLoading(true);
+  try {
+    const { data: { user } } = await (supabase.auth as any).getUser();
+    if (!user) throw new Error('User not authenticated');
 
-      const { error: creationError } = await supabase
-        .from('purchases')
-        .insert({
-          user_id: user.id,
-          template_id: selectedTemplate.id,
-          price_paid: selectedTemplate.price,
-          access_url: invitationUrl,
-          status: 'completed'
-        });
+    // Cek apakah user sudah membuat portfolio untuk template ini
+    const { data: existingPortfolio } = await supabase
+      .from('user_portfolios')
+      .select('groom_name, bride_name')
+      .eq('user_id', user.id)
+      .eq('template_id', selectedTemplate.id)
+      .single();
 
-      if (creationError) throw creationError;
-
-      setCreatedInvitationIds([...createdInvitationIds, selectedTemplate.id]);
-
-      setNotification({
-        type: 'success',
-        message: `Undangan "${selectedTemplate.title}" berhasil dibuat! Cek di User Panel Anda.`
-      });
+    let slug: string;
+    
+    if (existingPortfolio && existingPortfolio.groom_name && existingPortfolio.bride_name) {
+      // Gunakan nama dari portfolio (ambil kata pertama/first name)
+      const groomFirstName = existingPortfolio.groom_name.split(' ')[0].toLowerCase();
+      const brideFirstName = existingPortfolio.bride_name.split(' ')[0].toLowerCase();
       
-      setShowCreateModal(false);
-      setViewMode('user-panel');
-      window.history.pushState({}, '', '/user-panel');
-      setSelectedTemplate(null);
-
-      setTimeout(() => setNotification(null), 5000);
-
-    } catch (error: any) {
-      console.error('Invitation creation error:', error);
-      showNotification('error', 'Gagal membuat undangan. Silakan coba lagi.');
-    } finally {
-      setCreationLoading(false);
+      // Format: namagroom-namabride (contoh: adam-sarah)
+      slug = `${groomFirstName}-${brideFirstName}`;
+      
+      // Hapus karakter khusus dan replace spasi dengan dash
+      slug = slug
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Hapus diacritics
+        .replace(/[^a-z0-9-]/g, '-') // Replace karakter non-alphanumeric dengan dash
+        .replace(/-+/g, '-') // Replace multiple dashes dengan single dash
+        .replace(/^-|-$/g, ''); // Hapus dash di awal/akhir
+    } else {
+      // Fallback: gunakan format lama jika belum ada portfolio
+      slug = `${selectedTemplate.title.toLowerCase().replace(/ /g, '-')}-${Date.now().toString().slice(-6)}`;
     }
-  };
+
+    const invitationUrl = `/invitations/${slug}`;
+
+    // Cek apakah slug sudah digunakan
+    const { data: existingInvitation } = await supabase
+      .from('purchases')
+      .select('id')
+      .eq('access_url', invitationUrl)
+      .single();
+
+    // Jika slug sudah ada, tambahkan angka random di belakang
+    let finalUrl = invitationUrl;
+    if (existingInvitation) {
+      const randomNum = Math.floor(Math.random() * 9999);
+      finalUrl = `/invitations/${slug}-${randomNum}`;
+    }
+
+    const { error: creationError } = await supabase
+      .from('purchases')
+      .insert({
+        user_id: user.id,
+        template_id: selectedTemplate.id,
+        price_paid: selectedTemplate.price,
+        access_url: finalUrl,
+        status: 'completed'
+      });
+
+    if (creationError) throw creationError;
+
+    setCreatedInvitationIds([...createdInvitationIds, selectedTemplate.id]);
+
+    setNotification({
+      type: 'success',
+      message: `Undangan "${selectedTemplate.title}" berhasil dibuat! Cek di User Panel Anda.`
+    });
+    
+    setShowCreateModal(false);
+    setViewMode('user-panel');
+    window.history.pushState({}, '', '/user-panel');
+    setSelectedTemplate(null);
+
+    setTimeout(() => setNotification(null), 5000);
+
+  } catch (error: any) {
+    console.error('Invitation creation error:', error);
+    showNotification('error', 'Gagal membuat undangan. Silakan coba lagi.');
+  } finally {
+    setCreationLoading(false);
+  }
+};
 
   const handleViewPortfolio = (portfolio: PortfolioWithUser) => {
     setSelectedPortfolio(portfolio);
