@@ -13,6 +13,7 @@ import {
 import { supabase, WeddingTemplate, UserPortfolio, UserMedia } from '../lib/supabase';
 import TemplateCard from './TemplateCard';
 import PortfolioFormModal from './PortfolioFormModal';
+import InvitationConfigModal from './InvitationConfigModal';
 
 
 interface UserProfile {
@@ -69,6 +70,23 @@ export default function UserPanel({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [mediaFilter, setMediaFilter] = useState<'all' | 'image' | 'video' | 'music'>('all');
+  const [showConfigModal, setShowConfigModal] = useState(false);
+const [configInvitation, setConfigInvitation] = useState<UserInvitation | null>(null);
+
+const handleOpenConfig = (invitation: UserInvitation) => {
+  setConfigInvitation(invitation);
+  setShowConfigModal(true);
+};
+
+const handleCloseConfig = () => {
+  setConfigInvitation(null);
+  setShowConfigModal(false);
+};
+
+const handleSaveConfig = () => {
+  handleCloseConfig();
+  showNotification('success', 'Konfigurasi undangan berhasil disimpan!');
+};
 
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
   const [editingInvitation, setEditingInvitation] = useState<UserInvitation | null>(null);
@@ -437,6 +455,15 @@ export default function UserPanel({
           onSave={handleSavePortfolio}
         />
       )}
+      
+      {showConfigModal && configInvitation && (
+  <InvitationConfigModal
+    invitation={configInvitation}
+    onClose={handleCloseConfig}
+    onSave={handleSaveConfig}
+    userMedia={media.filter(m => m.file_type === 'image' || m.file_type === 'video' || m.file_type === 'music')}
+  />
+)}
 
       {/* Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 shadow-sm">
@@ -699,6 +726,15 @@ export default function UserPanel({
                                     <BookOpen className="w-4 h-4" />
                                     <span>{portfolio ? 'Edit Portofolio' : 'Buat Portofolio'}</span>
                                   </button>
+                                  
+                                <button
+  onClick={() => handleOpenConfig(invitation)}
+  className="flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-purple-500 text-purple-600 font-semibold hover:bg-purple-50 transition-all text-sm"
+>
+  <Settings className="w-4 h-4" />
+  <span>Konfigurasi</span>
+</button>  
+                                  
                                   <button
                                     onClick={() => setActiveTab('media')}
                                     className="flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 transition-all text-sm"

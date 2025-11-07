@@ -1,10 +1,10 @@
 // src/components/TemplateViewer.tsx
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 // Lazy load templates
 const ModernMinimalistTemplate = lazy(() => import('../templates/modern-minimalist/App'));
+import { supabase, UserInvitationConfig } from '../lib/supabase';
 
 // Template registry - maps template_code to component
 const TEMPLATE_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
@@ -34,50 +34,57 @@ const TemplateViewer: React.FC<TemplateViewerProps> = ({ slug }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
+  const [userConfig, setUserConfig] = useState<UserInvitationConfig | null>(null);
 
   useEffect(() => {
     loadInvitationData();
   }, [slug]);
 
-  const loadInvitationData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+const loadInvitationData = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      // Find the invitation by access_url (slug)
-      const { data, error: fetchError } = await supabase
-        .from('purchases')
-        .select(`
+    // Find the invitation by access_url (slug)
+    const { data, error: fetchError } = await supabase
+      .from('purchases')
+      .select(`
+        id,
+        user_id,
+        template_id,
+        access_url,
+        wedding_templates (
           id,
-          user_id,
-          template_id,
-          access_url,
-          wedding_templates (
-            id,
-            title,
-            template_code
-          )
-        `)
-        .eq('access_url', `/invitations/${slug}`)
-        .single();
+          title,
+          template_code
+        )
+      `)
+      .eq('access_url', `/invitations/${slug}`)
+      .single();
 
-      if (fetchError) {
-        throw fetchError;
-      }
+    if (fetchError) throw fetchError;
+    if (!data) throw new Error('Undangan tidak ditemukan');
 
-      if (!data) {
-        throw new Error('Undangan tidak ditemukan');
-      }
+    setInvitationData(data as any);
 
-      setInvitationData(data as any);
+    // Load user configuration
+    const { data: configData } = await supabase
+      .from('user_invitation_configs')
+      .select('*')
+      .eq('purchase_id', data.id)
+      .single();
 
-    } catch (err: any) {
-      console.error('Error loading invitation:', err);
-      setError(err.message || 'Gagal memuat undangan');
-    } finally {
-      setLoading(false);
+    if (configData) {
+      setUserConfig(configData);
     }
-  };
+
+  } catch (err: any) {
+    console.error('Error loading invitation:', err);
+    setError(err.message || 'Gagal memuat undangan');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleBackToHome = () => {
     window.history.pushState({}, '', '/');
@@ -158,7 +165,11 @@ const TemplateViewer: React.FC<TemplateViewerProps> = ({ slug }) => {
           </div>
         }
       >
-        <TemplateComponent invitationId={invitationData.id} />
+        <TemplateComponent 
+        invitationId={invitationData.id} 
+        userConfig={userConfig}
+        />
+        
       </Suspense>
     </div>
   );

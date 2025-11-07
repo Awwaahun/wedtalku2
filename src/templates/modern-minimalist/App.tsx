@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/templates/modern-minimalist/App.tsx - Updated with config merge
+import { useState, useEffect } from 'react';
 import { Heart, Calendar, Users, Gift, Wallet, MessageCircle, UserCircle, Send, Film } from 'lucide-react';
 import Hero from './components/Hero';
 import Countdown from './components/Countdown';
@@ -17,14 +18,24 @@ import MusicPlayer from './components/MusicPlayer';
 import PrayerDisplay from './components/PrayerDisplay';
 import PrayerLetter from './components/PrayerLetter';
 import CinematicIntro from './components/CinematicIntro';
-import { useWeddingConfig, type WeddingConfig } from './hooks/useWeddingConfig';
+import { useWeddingConfig } from './hooks/useWeddingConfig';
+import { useMergedConfig } from './hooks/useMergedConfig';
+import { UserInvitationConfig } from '../../lib/supabase';
 import LoginModal from './components/LoginModal';
 import ClientDashboard from './components/ClientDashboard';
 import './index.css';
 
-function App() {
-  const initialConfig = useWeddingConfig();
-  const [weddingConfig, setWeddingConfig] = useState<WeddingConfig>(initialConfig);
+interface TemplateProps {
+  invitationId: string;
+  userConfig?: UserInvitationConfig | null;
+}
+
+function App({ invitationId, userConfig }: TemplateProps) {
+  // Get default template configuration
+  const defaultConfig = useWeddingConfig();
+  
+  // Merge default config with user custom config
+  const weddingConfig = useMergedConfig(defaultConfig, userConfig);
   
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
@@ -39,6 +50,7 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
+  // Get guest name from URL parameter
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const guest = urlParams.get('to');
@@ -46,6 +58,15 @@ function App() {
       setGuestName(guest);
     }
   }, []);
+  
+  // Apply custom theme colors to CSS variables
+  useEffect(() => {
+    if (weddingConfig.theme) {
+      document.documentElement.style.setProperty('--color-primary', weddingConfig.theme.primary);
+      document.documentElement.style.setProperty('--color-secondary', weddingConfig.theme.secondary);
+      document.documentElement.style.setProperty('--color-accent', weddingConfig.theme.accent);
+    }
+  }, [weddingConfig.theme]);
   
   useEffect(() => {
     const handleScroll = () => {
@@ -78,12 +99,11 @@ function App() {
     handleOpenInvitation();
     setIsModalOpen(false);
 
-    // Tampilkan dan picu pemutar musik segera setelah pengguna mengklik
-    // untuk memastikan browser mengizinkan audio untuk diputar.
+    // Show and trigger music player immediately after user clicks
     setShowMusicButton(true);
     setPlayMusicTrigger(true);
 
-    // Tunda visibilitas konten utama untuk animasi transisi yang mulus.
+    // Delay main content visibility for smooth transition animation
     setTimeout(() => {
       setMainVisible(true);
       document.body.style.overflow = 'auto';
@@ -113,8 +133,10 @@ function App() {
     }
   };
   
-  const handleSaveConfig = (newConfig: WeddingConfig) => {
-    setWeddingConfig(newConfig);
+  const handleSaveConfig = (newConfig: typeof weddingConfig) => {
+    // Note: This is for ClientDashboard (admin panel)
+    // User config is saved via InvitationConfigModal in UserPanel
+    console.log('Config saved from admin dashboard:', newConfig);
     setIsDashboardOpen(false);
   };
 
