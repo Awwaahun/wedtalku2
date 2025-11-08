@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Save, Heart, Calendar, Music, Image as ImageIcon, 
-  Users, MapPin, Gift, Book, Palette, Loader2, AlertCircle,
-  CheckCircle
+  MapPin, Gift, Book, Palette, Loader2, AlertCircle,
+  CheckCircle, PenTool // Menambahkan PenTool untuk Theme/Palette
 } from 'lucide-react';
 import { supabase, UserMedia } from '../lib/supabase';
 
@@ -12,6 +12,20 @@ interface UserInvitation {
   template_id: string;
   access_url: string;
   wedding_templates: { title: string };
+}
+
+// Interface untuk item array (asumsi ini adalah struktur array minimal)
+interface SimpleItem {
+  id: string; 
+  title: string;
+  // field lain jika perlu
+}
+
+// Interface baru untuk item lirik
+interface LyricItem {
+  id: string; // Tambahkan ID untuk key dan operasi delete
+  time: string; // Format 'menit:detik' atau 'detik'
+  text: string;
 }
 
 interface InvitationConfig {
@@ -53,6 +67,21 @@ interface InvitationConfig {
   
   // Music
   music_audio_url: string;
+  music_lyrics: LyricItem[] | any; // <-- GANTI DENGAN ARRAY BARU
+
+  // Prayer Letter <-- NEW FIELDS
+  prayer_greeting: string;
+  prayer_body1: string;
+  prayer_body2: string;
+  prayer_body3: string;
+  prayer_closing: string;
+
+  // Array Content (Dibiarkan sebagai 'any' di config modal karena tidak diedit di sini, 
+  // tetapi harus ada untuk proses save/load)
+  events: SimpleItem[] | any; 
+  story: SimpleItem[] | any;
+  gallery: SimpleItem[] | any;
+  donations: SimpleItem[] | any;
   
   // Theme
   theme_primary: string;
@@ -67,6 +96,9 @@ interface InvitationConfigModalProps {
   userMedia: UserMedia[];
 }
 
+// Definisikan tipe untuk Tab
+type TabId = 'couple' | 'wedding' | 'hero' | 'invitation' | 'media' | 'prayer' | 'theme';
+
 const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({ 
   invitation, 
   onClose, 
@@ -76,10 +108,11 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  const [activeTab, setActiveTab] = useState<'couple' | 'wedding' | 'hero' | 'invitation' | 'media' | 'theme'>('couple');
+  const [activeTab, setActiveTab] = useState<TabId>('couple'); // Menggunakan TabId
   const [activeMediaPicker, setActiveMediaPicker] = useState<string | null>(null);
   
   const [config, setConfig] = useState<InvitationConfig>({
+    // Couple Info
     groom_name: '',
     groom_full_name: '',
     groom_parents: '',
@@ -96,23 +129,43 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
     bride_bio: '',
     bride_image_url: '',
     
+    // Wedding Info
     wedding_date: '',
     wedding_date_display: '',
     wedding_time: '14:00',
     
+    // Hero
     hero_background_image_url: '',
     hero_tagline: '',
     
+    // Invitation Modal
     invitation_title: 'Kamu Telah Diundang Ke Pernikahan',
     invitation_subtitle: 'Kepada Teman dan Keluarga besar, Kami Mengundang',
     invitation_button_text: 'Buka Undangan',
     invitation_background_video_url: '',
     
+    // Cinematic
     cinematic_video_url: '',
     cinematic_door_image_url: '',
     
+    // Music
     music_audio_url: '',
+    music_lyrics: [], // <-- DEFAULT ARRAY BARU
+
+    // Prayer Letter <-- DEFAULT PRAYER LETTER
+    prayer_greeting: 'Dear Our Beloved Friends & Family,',
+    prayer_body1: 'Dengan penuh rasa syukur dan sukacita, kami mengundang Bapak/Ibu/Saudara/i untuk hadir dalam pernikahan kami.',
+    prayer_body2: 'Merupakan suatu kehormatan bagi kami menerima restu dan doa dari Anda.',
+    prayer_body3: 'Besar harapan kami agar Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.',
+    prayer_closing: 'Hormat kami,',
+
+    // Array Content Defaults (Dibiarkan kosong)
+    events: [],
+    story: [],
+    gallery: [],
+    donations: [],
     
+    // Theme
     theme_primary: '#f43f5e',
     theme_secondary: '#f97316',
     theme_accent: '#ec4899',
@@ -125,7 +178,8 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   const loadConfig = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
+      // Perubahan: Menggunakan supabase.auth.getUser() yang lebih standar
+      const { data: { user } } = await supabase.auth.getUser(); 
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
@@ -134,49 +188,72 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
         .eq('purchase_id', invitation.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code !== 'PGRST116') { // PGRST116: baris tidak ditemukan
         throw error;
       }
 
       if (data) {
-        setConfig({
-          groom_name: data.groom_name || '',
-          groom_full_name: data.groom_full_name || '',
-          groom_parents: data.groom_parents || '',
-          groom_instagram: data.groom_instagram || '',
-          groom_email: data.groom_email || '',
-          groom_bio: data.groom_bio || '',
-          groom_image_url: data.groom_image_url || '',
+        setConfig(prevConfig => ({
+          ...prevConfig, // Gunakan prevConfig untuk memastikan nilai default tetap ada jika data dari DB null
           
-          bride_name: data.bride_name || '',
-          bride_full_name: data.bride_full_name || '',
-          bride_parents: data.bride_parents || '',
-          bride_instagram: data.bride_instagram || '',
-          bride_email: data.bride_email || '',
-          bride_bio: data.bride_bio || '',
-          bride_image_url: data.bride_image_url || '',
+          // Couple Info
+          groom_name: data.groom_name || prevConfig.groom_name,
+          groom_full_name: data.groom_full_name || prevConfig.groom_full_name,
+          groom_parents: data.groom_parents || prevConfig.groom_parents,
+          groom_instagram: data.groom_instagram || prevConfig.groom_instagram,
+          groom_email: data.groom_email || prevConfig.groom_email,
+          groom_bio: data.groom_bio || prevConfig.groom_bio,
+          groom_image_url: data.groom_image_url || prevConfig.groom_image_url,
           
-          wedding_date: data.wedding_date || '',
-          wedding_date_display: data.wedding_date_display || '',
-          wedding_time: data.wedding_time || '14:00',
+          bride_name: data.bride_name || prevConfig.bride_name,
+          bride_full_name: data.bride_full_name || prevConfig.bride_full_name,
+          bride_parents: data.bride_parents || prevConfig.bride_parents,
+          bride_instagram: data.bride_instagram || prevConfig.bride_instagram,
+          bride_email: data.bride_email || prevConfig.bride_email,
+          bride_bio: data.bride_bio || prevConfig.bride_bio,
+          bride_image_url: data.bride_image_url || prevConfig.bride_image_url,
           
-          hero_background_image_url: data.hero_background_image_url || '',
-          hero_tagline: data.hero_tagline || '',
+          // Wedding Info
+          wedding_date: data.wedding_date || prevConfig.wedding_date,
+          wedding_date_display: data.wedding_date_display || prevConfig.wedding_date_display,
+          wedding_time: data.wedding_time || prevConfig.wedding_time,
           
-          invitation_title: data.invitation_title || 'Kamu Telah Diundang Ke Pernikahan',
-          invitation_subtitle: data.invitation_subtitle || 'Kepada Teman dan Keluarga besar, Kami Mengundang',
-          invitation_button_text: data.invitation_button_text || 'Buka Undangan',
-          invitation_background_video_url: data.invitation_background_video_url || '',
+          // Hero
+          hero_background_image_url: data.hero_background_image_url || prevConfig.hero_background_image_url,
+          hero_tagline: data.hero_tagline || prevConfig.hero_tagline,
           
-          cinematic_video_url: data.cinematic_video_url || '',
-          cinematic_door_image_url: data.cinematic_door_image_url || '',
+          // Invitation Modal
+          invitation_title: data.invitation_title || prevConfig.invitation_title,
+          invitation_subtitle: data.invitation_subtitle || prevConfig.invitation_subtitle,
+          invitation_button_text: data.invitation_button_text || prevConfig.invitation_button_text,
+          invitation_background_video_url: data.invitation_background_video_url || prevConfig.invitation_background_video_url,
           
-          music_audio_url: data.music_audio_url || '',
+          // Cinematic
+          cinematic_video_url: data.cinematic_video_url || prevConfig.cinematic_video_url,
+          cinematic_door_image_url: data.cinematic_door_image_url || prevConfig.cinematic_door_image_url,
           
-          theme_primary: data.theme_primary || '#f43f5e',
-          theme_secondary: data.theme_secondary || '#f97316',
-          theme_accent: data.theme_accent || '#ec4899',
-        });
+          // Music
+          music_audio_url: data.music_audio_url || prevConfig.music_audio_url,
+          music_lyrics: data.music_lyrics || prevConfig.music_lyrics, // <-- MAPPING ARRAY BARU
+
+          // Prayer Letter <-- NEW MAPPING
+          prayer_greeting: data.prayer_greeting || prevConfig.prayer_greeting,
+          prayer_body1: data.prayer_body1 || prevConfig.prayer_body1,
+          prayer_body2: data.prayer_body2 || prevConfig.prayer_body2,
+          prayer_body3: data.prayer_body3 || prevConfig.prayer_body3,
+          prayer_closing: data.prayer_closing || prevConfig.prayer_closing,
+
+          // Array Content 
+          events: data.events || prevConfig.events, 
+          story: data.story || prevConfig.story,
+          gallery: data.gallery || prevConfig.gallery,
+          donations: data.donations || prevConfig.donations,
+          
+          // Theme
+          theme_primary: data.theme_primary || prevConfig.theme_primary,
+          theme_secondary: data.theme_secondary || prevConfig.theme_secondary,
+          theme_accent: data.theme_accent || prevConfig.theme_accent,
+        }));
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -189,15 +266,28 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
+      // Perubahan: Menggunakan supabase.auth.getUser() yang lebih standar
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Filter array content agar tidak mengirim array kosong jika tidak diubah di modal ini
+      // Ini adalah contoh bagaimana data array (events, story, etc.) harus disimpan
+      const configToSave = {
+        ...config,
+        // Pastikan array content dikirim sebagai array atau string JSON jika diperlukan oleh DB
+        events: config.events && config.events.length > 0 ? config.events : null,
+        story: config.story && config.story.length > 0 ? config.story : null,
+        gallery: config.gallery && config.gallery.length > 0 ? config.gallery : null,
+        donations: config.donations && config.donations.length > 0 ? config.donations : null,
+        music_lyrics: config.music_lyrics && (config.music_lyrics as LyricItem[]).length > 0 ? config.music_lyrics : null, // <-- LOGIC BARU
+      };
 
       const { error } = await supabase
         .from('user_invitation_configs')
         .upsert({
           user_id: user.id,
           purchase_id: invitation.id,
-          ...config
+          ...configToSave // Menggunakan configToSave yang telah dimodifikasi
         }, {
           onConflict: 'purchase_id'
         });
@@ -222,24 +312,52 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   };
 
   const handleInputChange = (field: keyof InvitationConfig, value: string) => {
+    // Karena kita hanya menangani string di InputField, ini aman.
     setConfig(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSelectMedia = (url: string) => {
     if (activeMediaPicker) {
-      handleInputChange(activeMediaPicker as keyof InvitationConfig, url);
+      // Type assertion yang aman karena kita tahu activeMediaPicker berasal dari InvitationConfig keys
+      handleInputChange(activeMediaPicker as keyof InvitationConfig, url); 
       setActiveMediaPicker(null);
     }
   };
+  
+  // Tiga fungsi baru untuk menangani array lirik
+  const handleAddLyric = () => {
+    setConfig(prev => ({
+      ...prev,
+      music_lyrics: [...(prev.music_lyrics as LyricItem[] || []), { id: Date.now().toString(), time: '00:00', text: '' }]
+    }));
+  };
 
-  const tabs = [
+  const handleUpdateLyric = (id: string, field: 'time' | 'text', value: string) => {
+    setConfig(prev => ({
+      ...prev,
+      music_lyrics: (prev.music_lyrics as LyricItem[] || []).map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const handleRemoveLyric = (id: string) => {
+    setConfig(prev => ({
+      ...prev,
+      music_lyrics: (prev.music_lyrics as LyricItem[] || []).filter(item => item.id !== id)
+    }));
+  };
+
+  // Perbarui daftar tabs
+  const tabs: { id: TabId; label: string; icon: React.FC<any> }[] = [
     { id: 'couple', label: 'Info Pasangan', icon: Heart },
     { id: 'wedding', label: 'Tanggal & Waktu', icon: Calendar },
     { id: 'hero', label: 'Hero Section', icon: ImageIcon },
     { id: 'invitation', label: 'Modal Undangan', icon: Book },
     { id: 'media', label: 'Media & Musik', icon: Music },
+    { id: 'prayer', label: 'Surat Doa', icon: Gift }, // <-- NEW TAB
     { id: 'theme', label: 'Warna Tema', icon: Palette },
-  ] as const;
+  ];
 
   if (loading) {
     return (
@@ -264,6 +382,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
       )}
 
       {activeMediaPicker && (
+        // Media Picker Modal - Logic dan UI tidak berubah
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
@@ -314,6 +433,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
         </div>
       )}
 
+      {/* Main Configuration Modal */}
       <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
         <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-scaleIn my-8">
           {/* Header */}
@@ -359,6 +479,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'couple' && (
               <div className="space-y-6">
+                {/* Mempelai Wanita */}
                 <div className="bg-rose-50 rounded-xl p-6">
                   <h3 className="text-xl font-bold text-rose-600 mb-4">Mempelai Wanita</h3>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -393,6 +514,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                   </div>
                 </div>
 
+                {/* Mempelai Pria */}
                 <div className="bg-blue-50 rounded-xl p-6">
                   <h3 className="text-xl font-bold text-blue-600 mb-4">Mempelai Pria</h3>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -487,6 +609,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
 
             {activeTab === 'media' && (
               <div className="space-y-4">
+                <h3 className="text-xl font-bold text-purple-600 mb-4">Video & Audio</h3>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Video Sinematik</label>
                   <div className="flex items-center space-x-3">
@@ -521,9 +644,11 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                     </button>
                   </div>
                 </div>
-                <div>
+                
+                {/* Audio Musik dan Lirik - BAGIAN YANG BERUBAH */}
+                <div className="pt-4 border-t border-gray-100">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Audio Musik</label>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 mb-8">
                     <input
                       type="url"
                       value={config.music_audio_url}
@@ -537,7 +662,96 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                       Pilih Audio
                     </button>
                   </div>
+                  
+                  {/* Lyrics Array UI */}
+                  <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
+                    Lirik Lagu (Sinkronisasi Teks & Waktu)
+                    <button
+                      onClick={handleAddLyric}
+                      className="text-sm px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      + Tambah Baris
+                    </button>
+                  </h4>
+                  <div className="space-y-3">
+                    {/* Pastikan config.music_lyrics adalah array sebelum map */}
+                    {(config.music_lyrics as LyricItem[] || []).map((lyric, index) => (
+                      <div key={lyric.id} className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border">
+                        <span className="text-sm font-semibold text-gray-500 pt-2">{index + 1}.</span>
+                        <div className="w-24 flex-shrink-0">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Waktu (00:00)</label>
+                          <input
+                            type="text"
+                            value={lyric.time}
+                            onChange={e => handleUpdateLyric(lyric.id, 'time', e.target.value)}
+                            placeholder="00:00"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Teks Lirik</label>
+                          <input
+                            type="text"
+                            value={lyric.text}
+                            onChange={e => handleUpdateLyric(lyric.id, 'text', e.target.value)}
+                            placeholder="Masukkan baris lirik di sini"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleRemoveLyric(lyric.id)}
+                          className="mt-5 p-1 text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
+                          title="Hapus Baris"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {(config.music_lyrics as LyricItem[] || []).length === 0 && (
+                      <p className="text-center text-gray-500 py-4 border-dashed border-2 rounded-lg">
+                        Klik "+ Tambah Baris" untuk mulai menambahkan lirik lagu.
+                      </p>
+                    )}
+                  </div>
+                  <blockquote className="border-l-4 border-gray-300 pl-4 py-2 mt-4 text-sm text-gray-600 italic">
+                    Gunakan format **menit:detik** (misal: 01:25) di kolom Waktu agar lirik muncul sesuai dengan detik lagu.
+                  </blockquote>
                 </div>
+              </div>
+            )}
+            
+            {/* NEW TAB: PRAYER LETTER */}
+            {activeTab === 'prayer' && (
+              <div className="space-y-4 bg-lime-50 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-lime-700 mb-4">🙏 Konfigurasi Surat Doa/Kata Sambutan</h3>
+                <InputField 
+                  label="Salam Pembuka (Greeting)" 
+                  value={config.prayer_greeting} 
+                  onChange={e => handleInputChange('prayer_greeting', e.target.value)} 
+                />
+                <TextareaField 
+                  label="Paragraf Isi 1" 
+                  value={config.prayer_body1} 
+                  onChange={e => handleInputChange('prayer_body1', e.target.value)} 
+                />
+                <TextareaField 
+                  label="Paragraf Isi 2" 
+                  value={config.prayer_body2} 
+                  onChange={e => handleInputChange('prayer_body2', e.target.value)} 
+                />
+                <TextareaField 
+                  label="Paragraf Isi 3" 
+                  value={config.prayer_body3} 
+                  onChange={e => handleInputChange('prayer_body3', e.target.value)} 
+                />
+                <InputField 
+                  label="Salam Penutup (Closing)" 
+                  value={config.prayer_closing} 
+                  onChange={e => handleInputChange('prayer_closing', e.target.value)} 
+                />
+                <blockquote className="border-l-4 border-lime-300 pl-4 py-2 text-sm text-gray-600 italic">
+                  Teks-teks ini akan mengisi bagian 'Kata Sambutan' atau 'Surat Doa' di template Anda.
+                </blockquote>
               </div>
             )}
 
@@ -582,6 +796,8 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
     </>
   );
 };
+
+// --- Helper Components (Tidak Berubah) ---
 
 const InputField: React.FC<{
   label: string;
