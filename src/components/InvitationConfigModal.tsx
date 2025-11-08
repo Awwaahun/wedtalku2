@@ -7,6 +7,35 @@ import {
 } from 'lucide-react';
 import { supabase, UserMedia } from '../lib/supabase';
 
+// Helper to convert seconds (number) to MM:SS string
+const formatTime = (totalSeconds: number): string => {
+  if (typeof totalSeconds !== 'number' || isNaN(totalSeconds) || totalSeconds < 0) return '00:00';
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+// Helper to convert MM:SS string (atau seconds string) to seconds number
+const parseTime = (timeString: string): number => {
+  if (!timeString) return 0;
+  // Menghapus karakter non-digit dan non-titik dua
+  timeString = timeString.replace(/[^\d:]/g, ''); 
+  
+  const parts = timeString.split(':').map(p => parseInt(p, 10));
+
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    // Format MM:SS
+    return (parts[0] * 60) + parts[1];
+  }
+  
+  if (parts.length === 1 && !isNaN(parts[0])) {
+    // Format SS (total seconds)
+    return parts[0];
+  }
+  
+  return 0; // Default ke 0 jika format tidak valid
+};
+
 interface UserInvitation {
   id: string;
   template_id: string;
@@ -21,10 +50,10 @@ interface SimpleItem {
   // field lain jika perlu
 }
 
-// Interface baru untuk item lirik
+// Interface baru untuk item lirik (sesuai DB: time adalah number)
 interface LyricItem {
-  id: string; // Tambahkan ID untuk key dan operasi delete
-  time: string; // Format 'menit:detik' atau 'detik'
+  id: string; 
+  time: number; // UPDATED: time adalah number (detik)
   text: string;
 }
 
@@ -67,9 +96,9 @@ interface InvitationConfig {
   
   // Music
   music_audio_url: string;
-  music_lyrics: LyricItem[] | any; // <-- GANTI DENGAN ARRAY BARU
+  music_lyrics: LyricItem[] | any; // <-- MENGGUNAKAN NAMA FIELD YANG SESUAI DB
 
-  // Prayer Letter <-- NEW FIELDS
+  // Prayer Letter 
   prayer_greeting: string;
   prayer_body1: string;
   prayer_body2: string;
@@ -150,7 +179,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
     
     // Music
     music_audio_url: '',
-    music_lyrics: [], // <-- DEFAULT ARRAY BARU
+    music_lyrics: [], // <-- DEFAULT ARRAY BARU (time: 0, text: '')
 
     // Prayer Letter <-- DEFAULT PRAYER LETTER
     prayer_greeting: 'Dear Our Beloved Friends & Family,',
@@ -234,9 +263,9 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
           
           // Music
           music_audio_url: data.music_audio_url || prevConfig.music_audio_url,
-          music_lyrics: data.music_lyrics || prevConfig.music_lyrics, // <-- MAPPING ARRAY BARU
+          music_lyrics: data.music_lyrics || prevConfig.music_lyrics, // <-- MAPPING ARRAY BARU (data time: number)
 
-          // Prayer Letter <-- NEW MAPPING
+          // Prayer Letter 
           prayer_greeting: data.prayer_greeting || prevConfig.prayer_greeting,
           prayer_body1: data.prayer_body1 || prevConfig.prayer_body1,
           prayer_body2: data.prayer_body2 || prevConfig.prayer_body2,
@@ -271,10 +300,9 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
       if (!user) throw new Error('Not authenticated');
 
       // Filter array content agar tidak mengirim array kosong jika tidak diubah di modal ini
-      // Ini adalah contoh bagaimana data array (events, story, etc.) harus disimpan
       const configToSave = {
         ...config,
-        // Pastikan array content dikirim sebagai array atau string JSON jika diperlukan oleh DB
+        // Pastikan array content dikirim sebagai array atau null
         events: config.events && config.events.length > 0 ? config.events : null,
         story: config.story && config.story.length > 0 ? config.story : null,
         gallery: config.gallery && config.gallery.length > 0 ? config.gallery : null,
@@ -324,20 +352,34 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
     }
   };
   
-  // Tiga fungsi baru untuk menangani array lirik
+  // Fungsi baru untuk menangani penambahan baris lirik
   const handleAddLyric = () => {
     setConfig(prev => ({
       ...prev,
-      music_lyrics: [...(prev.music_lyrics as LyricItem[] || []), { id: Date.now().toString(), time: '00:00', text: '' }]
+      music_lyrics: [...(prev.music_lyrics as LyricItem[] || []), { id: Date.now().toString(), time: 0, text: '' }] // time: 0 (number)
     }));
   };
 
-  const handleUpdateLyric = (id: string, field: 'time' | 'text', value: string) => {
+  // Fungsi untuk update field text
+  const handleUpdateLyricText = (id: string, textValue: string) => {
     setConfig(prev => ({
       ...prev,
       music_lyrics: (prev.music_lyrics as LyricItem[] || []).map(item => 
-        item.id === id ? { ...item, [field]: value } : item
+        item.id === id ? { ...item, text: textValue } : item
       )
+    }));
+  };
+
+  // Fungsi khusus untuk update field time (string MM:SS -> number seconds)
+  const handleUpdateLyricTime = (id: string, timeString: string) => {
+    const newTimeNumber = parseTime(timeString);
+    
+    // Hanya update state jika input adalah angka (detik), atau jika field yang di-update bukan time
+    setConfig(prev => ({
+        ...prev,
+        music_lyrics: (prev.music_lyrics as LyricItem[] || []).map(item => 
+          item.id === id ? { ...item, time: newTimeNumber } : item // Store as number
+        )
     }));
   };
 
@@ -679,11 +721,11 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                       <div key={lyric.id} className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border">
                         <span className="text-sm font-semibold text-gray-500 pt-2">{index + 1}.</span>
                         <div className="w-24 flex-shrink-0">
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Waktu (00:00)</label>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Waktu (MM:SS)</label>
                           <input
                             type="text"
-                            value={lyric.time}
-                            onChange={e => handleUpdateLyric(lyric.id, 'time', e.target.value)}
+                            value={formatTime(lyric.time)} // Tampilkan dalam format MM:SS
+                            onChange={e => handleUpdateLyricTime(lyric.id, e.target.value)} // Gunakan handler khusus
                             placeholder="00:00"
                             className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
                           />
@@ -693,7 +735,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                           <input
                             type="text"
                             value={lyric.text}
-                            onChange={e => handleUpdateLyric(lyric.id, 'text', e.target.value)}
+                            onChange={e => handleUpdateLyricText(lyric.id, e.target.value)} // Gunakan handler khusus
                             placeholder="Masukkan baris lirik di sini"
                             className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
                           />
@@ -714,7 +756,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                     )}
                   </div>
                   <blockquote className="border-l-4 border-gray-300 pl-4 py-2 mt-4 text-sm text-gray-600 italic">
-                    Gunakan format **menit:detik** (misal: 01:25) di kolom Waktu agar lirik muncul sesuai dengan detik lagu.
+                    Masukkan waktu dalam format **MM:SS** (misal: 01:25) atau total detik (misal: 85). Data akan disimpan sebagai total detik.
                   </blockquote>
                 </div>
               </div>
@@ -797,7 +839,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   );
 };
 
-// --- Helper Components (Tidak Berubah) ---
+// --- Helper Components ---
 
 const InputField: React.FC<{
   label: string;
