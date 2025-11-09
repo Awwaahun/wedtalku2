@@ -550,7 +550,7 @@ const handleSaveConfig = () => {
     if (!invitation) return;
 
     const cleanedPhone = guest.phone.replace(/[^0-9]/g, '');
-    const invitationUrl = `${window.location.origin}${invitation.access_url}/?to=${encodeURIComponent(guest.name)}`;
+    const invitationUrl = `${window.location.origin}${invitation.access_url}?to=${encodeURIComponent(guest.name)}`;
 
     const finalMessage = whatsappMessage
       .replace('[GUEST_NAME]', guest.name)
