@@ -1,43 +1,68 @@
-
-
-// src/components/UserPanel.tsx
-import React, { useState, useEffect } from 'react';
+// src/components/UserPanel.tsx - Enhanced Version
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, ShoppingBag, Heart, Download, Settings, 
   LogOut, Package, CreditCard, Eye, Calendar,
   ArrowLeft, FileText, Mail, Phone, MapPin,
   Upload, Image as ImageIcon, Video, Music, Trash2, Copy,
   CheckCircle, AlertCircle, Loader2, X, ExternalLink,
-  Share, Edit3, BookOpen
+  Share, Edit3, BookOpen, MessageSquare, Users, Send,
+  PlusCircle, FileUp, UserCheck, UserX, Clock, MessageCircle
 } from 'lucide-react';
 import { supabase, WeddingTemplate, UserPortfolio, UserMedia } from '../lib/supabase';
 import TemplateCard from './TemplateCard';
 import PortfolioFormModal from './PortfolioFormModal';
 import InvitationConfigModal from './InvitationConfigModal';
 
-
 interface UserProfile {
   id: string;
   email: string;
   full_name: string;
   role: string;
-  storage_limit: number; // -1 = unlimited
+  storage_limit: number;
   created_at: string;
 }
 
-// Represents a created invitation
 interface UserInvitation {
   id: string;
   template_id: string;
   price_paid: number;
-  purchase_date: string; // Represents creation_date
-  access_url: string;    // The unique URL
+  purchase_date: string;
+  access_url: string;
   status: string;
   wedding_templates: {
     title: string;
     thumbnail_url: string;
     category: string;
   };
+}
+
+interface RSVPEntry {
+  id: string;
+  name: string;
+  email: string;
+  guests: number;
+  attending: boolean;
+  dietary_requirements: string;
+  message: string;
+  created_at: string;
+  invitation_id: string;
+}
+
+interface GuestBookEntry {
+  id: string;
+  name: string;
+  message: string;
+  created_at: string;
+  invitation_id: string;
+}
+
+interface Guest {
+  id: string;
+  name: string;
+  phone: string | null;
+  invitation_id: string;
+  created_at: string;
 }
 
 interface UserPanelProps {
@@ -59,7 +84,7 @@ export default function UserPanel({
   onGoToUserPanel,
   onNavigateHome,
 }: UserPanelProps) {
-  const [activeTab, setActiveTab] = useState<'invitations' | 'media' | 'favorites' | 'profile' | 'settings'>('invitations');
+  const [activeTab, setActiveTab] = useState<'invitations' | 'media' | 'favorites' | 'rsvp' | 'guestbook' | 'whatsapp' | 'profile' | 'settings'>('invitations');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [invitations, setInvitations] = useState<UserInvitation[]>([]);
   const [favoriteTemplates, setFavoriteTemplates] = useState<WeddingTemplate[]>([]);
@@ -70,10 +95,13 @@ export default function UserPanel({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [mediaFilter, setMediaFilter] = useState<'all' | 'image' | 'video' | 'music'>('all');
+  
   const [showConfigModal, setShowConfigModal] = useState(false);
-const [configInvitation, setConfigInvitation] = useState<UserInvitation | null>(null);
-
-const handleOpenConfig = (invitation: UserInvitation) => {
+  const [configInvitation, setConfigInvitation] = useState<UserInvitation | null>(null);
+  const [showPortfolioForm, setShowPortfolioForm] = useState(false);
+  const [editingInvitation, setEditingInvitation] = useState<UserInvitation | null>(null);
+  
+  const handleOpenConfig = (invitation: UserInvitation) => {
   setConfigInvitation(invitation);
   setShowConfigModal(true);
 };
@@ -88,13 +116,35 @@ const handleSaveConfig = () => {
   showNotification('success', 'Konfigurasi undangan berhasil disimpan!');
 };
 
-  const [showPortfolioForm, setShowPortfolioForm] = useState(false);
-  const [editingInvitation, setEditingInvitation] = useState<UserInvitation | null>(null);
+  // RSVP State
+  const [rsvpData, setRsvpData] = useState<RSVPEntry[]>([]);
+  const [loadingRSVP, setLoadingRSVP] = useState(false);
+  const [selectedInvitationForRSVP, setSelectedInvitationForRSVP] = useState<string | null>(null);
 
-  // Helper Functions for Storage Management
+  // Guest Book State
+  const [guestBookData, setGuestBookData] = useState<GuestBookEntry[]>([]);
+  const [loadingGuestBook, setLoadingGuestBook] = useState(false);
+  const [selectedInvitationForGuestBook, setSelectedInvitationForGuestBook] = useState<string | null>(null);
+
+  // WhatsApp State
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [loadingGuests, setLoadingGuests] = useState(false);
+  const [selectedInvitationForWhatsApp, setSelectedInvitationForWhatsApp] = useState<string | null>(null);
+  const [newGuestName, setNewGuestName] = useState('');
+  const [newGuestPhone, setNewGuestPhone] = useState('');
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+  
+  const [whatsappMessage, setWhatsappMessage] = useState(
+    `_Assalamualaikum Warahmatullahi Wabarakatuh_\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i *[GUEST_NAME]* untuk menghadiri acara kami.\n\n*Berikut link undangan kami:*\n[INVITATION_URL]\n\nMerupakan suatu kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan untuk hadir dan memberikan doa restu.\n\n*Mohon maaf perihal undangan hanya di bagikan melalui pesan ini.*\n\nTerima kasih banyak atas perhatiannya.`
+  );
+
+  // Helper Functions
   const getStorageLimit = () => {
-    if (!profile) return 100 * 1024 * 1024; // 100MB default
-    if (profile.storage_limit === -1) return -1; // Unlimited
+    if (!profile) return 100 * 1024 * 1024;
+    if (profile.storage_limit === -1) return -1;
     return profile.storage_limit;
   };
 
@@ -104,14 +154,14 @@ const handleSaveConfig = () => {
 
   const getStoragePercentage = () => {
     const limit = getStorageLimit();
-    if (limit === -1) return 0; // Unlimited = 0%
+    if (limit === -1) return 0;
     const usage = getCurrentStorageUsage();
     return Math.min((usage / limit) * 100, 100);
   };
 
   const isStorageFull = () => {
     const limit = getStorageLimit();
-    if (limit === -1) return false; // Unlimited never full
+    if (limit === -1) return false;
     return getCurrentStorageUsage() >= limit;
   };
 
@@ -121,79 +171,32 @@ const handleSaveConfig = () => {
     return formatFileSize(limit);
   };
 
-  useEffect(() => {
-    loadUserData();
-  }, [favoriteIds]);
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
 
-  const loadUserData = async () => {
-    setLoading(true);
-    try {
-      // FIX: Cast supabase.auth to any to bypass TypeScript error due to likely version mismatch.
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      
-      if (user) {
-        // Load profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        setProfile(profileData);
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-        // Load created invitations (from 'purchases' table)
-        const { data: invitationsData } = await supabase
-          .from('purchases')
-          .select(`
-            *,
-            wedding_templates (
-              title,
-              thumbnail_url,
-              category
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('purchase_date', { ascending: false });
-        
-        setInvitations(invitationsData || []);
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
-        // Load favorite templates using IDs from App.tsx
-        if (favoriteIds.length > 0) {
-            const { data: favTemplatesData, error: favError } = await supabase
-                .from('wedding_templates')
-                .select('*')
-                .in('id', favoriteIds);
-
-            if (favError) {
-                console.error('Error loading favorite templates:', favError);
-                setFavoriteTemplates([]);
-            } else {
-                // The order from .in() is not guaranteed, so we create a map for ordering
-                const idOrderMap = new Map(favoriteIds.map((id, index) => [id, index]));
-                const sorted = favTemplatesData.sort((a, b) => (idOrderMap.get(a.id) ?? 999) - (idOrderMap.get(b.id) ?? 999));
-                setFavoriteTemplates(sorted || []);
-            }
-        } else {
-            setFavoriteTemplates([]);
-        }
-
-        // Load portfolios
-        const { data: portfoliosData } = await supabase
-          .from('user_portfolios')
-          .select('*')
-          .eq('user_id', user.id);
-        setPortfolios(portfoliosData || []);
-
-
-        // Load media
-        await loadMedia();
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      showNotification('error', 'Gagal memuat data pengguna');
-    } finally {
-      setLoading(false);
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showNotification('success', 'URL berhasil disalin!');
   };
 
   const handleOpenPortfolioForm = (invitation: UserInvitation) => {
@@ -212,10 +215,67 @@ const handleSaveConfig = () => {
     showNotification('success', 'Portofolio berhasil disimpan!');
   };
 
+  // Load Data Functions
+  useEffect(() => {
+    loadUserData();
+  }, [favoriteIds]);
+
+  const loadUserData = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        setProfile(profileData);
+
+        const { data: invitationsData } = await supabase
+          .from('purchases')
+          .select(`*, wedding_templates (title, thumbnail_url, category)`)
+          .eq('user_id', user.id)
+          .order('purchase_date', { ascending: false });
+        
+        setInvitations(invitationsData || []);
+
+        if (favoriteIds.length > 0) {
+          const { data: favTemplatesData, error: favError } = await supabase
+            .from('wedding_templates')
+            .select('*')
+            .in('id', favoriteIds);
+
+          if (!favError) {
+            const idOrderMap = new Map(favoriteIds.map((id, index) => [id, index]));
+            const sorted = favTemplatesData.sort((a, b) => (idOrderMap.get(a.id) ?? 999) - (idOrderMap.get(b.id) ?? 999));
+            setFavoriteTemplates(sorted || []);
+          }
+        } else {
+          setFavoriteTemplates([]);
+        }
+
+        const { data: portfoliosData } = await supabase
+          .from('user_portfolios')
+          .select('*')
+          .eq('user_id', user.id);
+        setPortfolios(portfoliosData || []);
+
+        await loadMedia();
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      showNotification('error', 'Gagal memuat data pengguna');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadMedia = async () => {
     try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
@@ -232,27 +292,299 @@ const handleSaveConfig = () => {
     }
   };
 
+  // RSVP Functions
+  const loadRSVPData = async (invitationId: string) => {
+    setLoadingRSVP(true);
+    try {
+      const { data, error } = await supabase
+        .from('rsvp')
+        .select('*')
+        .eq('invitation_id', invitationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setRsvpData(data || []);
+    } catch (error) {
+      console.error('Error loading RSVP:', error);
+      showNotification('error', 'Gagal memuat data RSVP');
+    } finally {
+      setLoadingRSVP(false);
+    }
+  };
+
+  const deleteRSVPEntry = async (id: string) => {
+    if (!confirm('Hapus entri RSVP ini?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('rsvp')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setRsvpData(prev => prev.filter(r => r.id !== id));
+      showNotification('success', 'RSVP berhasil dihapus');
+    } catch (error) {
+      console.error('Error deleting RSVP:', error);
+      showNotification('error', 'Gagal menghapus RSVP');
+    }
+  };
+
+  const exportRSVP = () => {
+    if (rsvpData.length === 0) {
+      showNotification('error', 'Tidak ada data untuk diekspor');
+      return;
+    }
+
+    const csvContent = [
+      ['Nama', 'Email', 'Jumlah Tamu', 'Kehadiran', 'Kebutuhan Diet', 'Pesan', 'Tanggal'].join(','),
+      ...rsvpData.map(r => [
+        r.name,
+        r.email,
+        r.guests,
+        r.attending ? 'Hadir' : 'Tidak Hadir',
+        r.dietary_requirements || '-',
+        `"${r.message.replace(/"/g, '""')}"`,
+        new Date(r.created_at).toLocaleDateString('id-ID')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `rsvp_data_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  // Guest Book Functions
+  const loadGuestBookData = async (invitationId: string) => {
+    setLoadingGuestBook(true);
+    try {
+      const { data, error } = await supabase
+        .from('guest_book')
+        .select('*')
+        .eq('invitation_id', invitationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setGuestBookData(data || []);
+    } catch (error) {
+      console.error('Error loading guest book:', error);
+      showNotification('error', 'Gagal memuat buku tamu');
+    } finally {
+      setLoadingGuestBook(false);
+    }
+  };
+
+  const deleteGuestBookEntry = async (id: string) => {
+    if (!confirm('Hapus pesan ini?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('guest_book')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setGuestBookData(prev => prev.filter(g => g.id !== id));
+      showNotification('success', 'Pesan berhasil dihapus');
+    } catch (error) {
+      console.error('Error deleting guest book:', error);
+      showNotification('error', 'Gagal menghapus pesan');
+    }
+  };
+
+  const exportGuestBook = () => {
+    if (guestBookData.length === 0) {
+      showNotification('error', 'Tidak ada data untuk diekspor');
+      return;
+    }
+
+    const csvContent = [
+      ['Nama', 'Pesan', 'Tanggal'].join(','),
+      ...guestBookData.map(g => [
+        g.name,
+        `"${g.message.replace(/"/g, '""')}"`,
+        new Date(g.created_at).toLocaleDateString('id-ID')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `guest_book_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  // WhatsApp Functions
+  const loadGuests = async (invitationId: string) => {
+    setLoadingGuests(true);
+    try {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .eq('invitation_id', invitationId)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setGuests(data || []);
+    } catch (error) {
+      console.error('Error loading guests:', error);
+      showNotification('error', 'Gagal memuat daftar tamu');
+    } finally {
+      setLoadingGuests(false);
+    }
+  };
+
+  const handleAddGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGuestName.trim() || !selectedInvitationForWhatsApp) {
+      showNotification('error', 'Nama tamu wajib diisi');
+      return;
+    }
+
+    setIsAddingGuest(true);
+    try {
+      const { data, error } = await supabase
+        .from('guests')
+        .insert([{ 
+          name: newGuestName.trim(), 
+          phone: newGuestPhone.trim() || null,
+          invitation_id: selectedInvitationForWhatsApp
+        }])
+        .select();
+
+      if (error) throw error;
+      if (data) {
+        setGuests(prev => [...prev, ...data].sort((a, b) => a.name.localeCompare(b.name)));
+        setNewGuestName('');
+        setNewGuestPhone('');
+        showNotification('success', 'Tamu berhasil ditambahkan');
+      }
+    } catch (error) {
+      console.error('Error adding guest:', error);
+      showNotification('error', 'Gagal menambahkan tamu');
+    } finally {
+      setIsAddingGuest(false);
+    }
+  };
+
+  const handleDeleteGuest = async (guest: Guest) => {
+    if (!confirm(`Hapus ${guest.name}?`)) return;
+
+    setDeletingId(guest.id);
+    try {
+      const { error } = await supabase
+        .from('guests')
+        .delete()
+        .match({ id: guest.id });
+
+      if (error) throw error;
+      setGuests(prev => prev.filter(g => g.id !== guest.id));
+      showNotification('success', 'Tamu berhasil dihapus');
+    } catch (error) {
+      console.error('Error deleting guest:', error);
+      showNotification('error', 'Gagal menghapus tamu');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedInvitationForWhatsApp) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const rows = text.split('\n').filter(row => row.trim() !== '');
+        const newGuests = rows.map(row => {
+          const [name, phone] = row.split(',').map(field => field.trim());
+          return { 
+            name, 
+            phone: phone || null,
+            invitation_id: selectedInvitationForWhatsApp
+          };
+        }).filter(g => g.name);
+
+        if (newGuests.length === 0) {
+          showNotification('error', 'Tidak ada tamu valid dalam file');
+          setIsImporting(false);
+          return;
+        }
+
+        const { error } = await supabase
+          .from('guests')
+          .insert(newGuests);
+
+        if (error) throw error;
+
+        await loadGuests(selectedInvitationForWhatsApp);
+        showNotification('success', `${newGuests.length} tamu berhasil diimpor!`);
+      } catch (error) {
+        console.error('Error importing CSV:', error);
+        showNotification('error', 'Gagal mengimpor CSV');
+      } finally {
+        setIsImporting(false);
+        if (importFileRef.current) {
+          importFileRef.current.value = '';
+        }
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleSendWhatsApp = (guest: Guest) => {
+    if (!guest.phone) {
+      showNotification('error', `Nomor telepon tidak ada untuk ${guest.name}`);
+      return;
+    }
+
+    const invitation = invitations.find(i => i.id === selectedInvitationForWhatsApp);
+    if (!invitation) return;
+
+    const cleanedPhone = guest.phone.replace(/[^0-9]/g, '');
+    const invitationUrl = `${window.location.origin}${invitation.access_url}/?to=${encodeURIComponent(guest.name)}`;
+
+    const finalMessage = whatsappMessage
+      .replace('[GUEST_NAME]', guest.name)
+      .replace('[INVITATION_URL]', invitationUrl);
+
+    const whatsappUrl = `https://wa.me/${cleanedPhone}?text=${encodeURIComponent(finalMessage)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
+
+  // Media Upload Functions (keeping existing code)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fileType: 'image' | 'video' | 'music') => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check storage limit (skip for admin)
     if (getStorageLimit() !== -1) {
       const currentUsage = getCurrentStorageUsage();
       const newTotalSize = currentUsage + file.size;
       
       if (newTotalSize > getStorageLimit()) {
-        showNotification('error', 'Storage Anda penuh! Hapus beberapa file atau hubungi admin.');
+        showNotification('error', 'Storage penuh! Hapus file atau hubungi admin.');
         event.target.value = '';
         return;
       }
     }
 
-    // Validate file size
     const maxSizes = {
-      image: 5 * 1024 * 1024,  // 5MB
-      video: 50 * 1024 * 1024, // 50MB
-      music: 10 * 1024 * 1024  // 10MB
+      image: 5 * 1024 * 1024,
+      video: 50 * 1024 * 1024,
+      music: 10 * 1024 * 1024
     };
 
     if (file.size > maxSizes[fileType]) {
@@ -261,7 +593,6 @@ const handleSaveConfig = () => {
       return;
     }
 
-    // Validate file type
     const validTypes = {
       image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
       video: ['video/mp4', 'video/webm', 'video/ogg'],
@@ -278,20 +609,17 @@ const handleSaveConfig = () => {
     setUploadProgress(0);
 
     try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Generate unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       const bucketName = `user-${fileType}s`;
 
-      // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(fileName, file, {
@@ -304,12 +632,10 @@ const handleSaveConfig = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from(bucketName)
         .getPublicUrl(fileName);
 
-      // Save metadata to database
       const { error: dbError } = await supabase
         .from('user_media')
         .insert({
@@ -337,25 +663,22 @@ const handleSaveConfig = () => {
   };
 
   const handleDeleteMedia = async (mediaItem: UserMedia) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus file ini?')) return;
+    if (!confirm('Hapus file ini?')) return;
 
     try {
-      const { data: { user } } = await (supabase.auth as any).getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      // Extract file path from URL
       const urlParts = mediaItem.file_url.split('/');
       const fileName = `${user.id}/${urlParts[urlParts.length - 1]}`;
       const bucketName = `user-${mediaItem.file_type}s`;
 
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from(bucketName)
         .remove([fileName]);
 
       if (storageError) throw storageError;
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from('user_media')
         .delete()
@@ -371,37 +694,6 @@ const handleSaveConfig = () => {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    showNotification('success', 'URL berhasil disalin!');
-  };
-
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const handleSignOut = async () => {
-    await (supabase.auth as any).signOut();
-    window.location.href = '/';
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
   const getMediaIcon = (type: string) => {
     switch(type) {
       case 'image': return ImageIcon;
@@ -411,12 +703,13 @@ const handleSaveConfig = () => {
     }
   };
 
-  const filteredMedia = mediaFilter === 'all' 
-    ? media 
-    : media.filter(m => m.file_type === mediaFilter);
+  const filteredMedia = mediaFilter === 'all' ? media : media.filter(m => m.file_type === mediaFilter);
 
   const navItems = [
     { id: 'invitations', icon: Package, label: 'Undangan Saya', badge: invitations.length },
+    { id: 'rsvp', icon: UserCheck, label: 'RSVP', badge: undefined },
+    { id: 'guestbook', icon: MessageSquare, label: 'Buku Tamu', badge: undefined },
+    { id: 'whatsapp', icon: Send, label: 'WhatsApp Blast', badge: undefined },
     { id: 'media', icon: Upload, label: 'Media Saya', badge: media.length },
     { id: 'favorites', icon: Heart, label: 'Favorit', badge: favoriteTemplates.length },
     { id: 'profile', icon: User, label: 'Profil Saya' },
@@ -457,13 +750,13 @@ const handleSaveConfig = () => {
       )}
       
       {showConfigModal && configInvitation && (
-  <InvitationConfigModal
-    invitation={configInvitation}
-    onClose={handleCloseConfig}
-    onSave={handleSaveConfig}
-    userMedia={media.filter(m => m.file_type === 'image' || m.file_type === 'video' || m.file_type === 'music')}
-  />
-)}
+        <InvitationConfigModal
+          invitation={configInvitation}
+          onClose={() => { setShowConfigModal(false); setConfigInvitation(null); }}
+          onSave={() => { setShowConfigModal(false); setConfigInvitation(null); showNotification('success', 'Konfigurasi berhasil disimpan!'); }}
+          userMedia={media}
+        />
+      )}
 
       {/* Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 shadow-sm">
@@ -502,7 +795,6 @@ const handleSaveConfig = () => {
           {/* Sidebar */}
           <aside className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
-              {/* Profile Summary */}
               <div className="text-center mb-6 pb-6 border-b border-gray-200">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center">
                   <User className="w-10 h-10 text-white" />
@@ -518,7 +810,6 @@ const handleSaveConfig = () => {
                 </span>
               </div>
 
-              {/* Navigation */}
               <nav className="space-y-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
@@ -951,7 +1242,445 @@ const handleSaveConfig = () => {
                   </div>
                 </div>
               )}
+              
+              {/* RSVP Tab */}
+              {activeTab === 'rsvp' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                      <UserCheck className="w-6 h-6 mr-2 text-purple-600" />
+                      Data RSVP
+                    </h2>
+                  </div>
 
+                  {/* Invitation Selector */}
+                  <div className="bg-gradient-to-r from-purple-50 to-cyan-50 rounded-xl p-4 border border-purple-200">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Pilih Undangan
+                    </label>
+                    <select
+                      value={selectedInvitationForRSVP || ''}
+                      onChange={(e) => {
+                        setSelectedInvitationForRSVP(e.target.value);
+                        if (e.target.value) loadRSVPData(e.target.value);
+                      }}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-purple-400 outline-none"
+                    >
+                      <option value="">-- Pilih Undangan --</option>
+                      {invitations.map(inv => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.wedding_templates.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedInvitationForRSVP && (
+                    <>
+                      {/* Stats Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Hadir</p>
+                              <p className="text-2xl font-bold text-green-600">
+                                {rsvpData.filter(r => r.attending).length}
+                              </p>
+                            </div>
+                            <UserCheck className="w-8 h-8 text-green-600" />
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Tidak Hadir</p>
+                              <p className="text-2xl font-bold text-red-600">
+                                {rsvpData.filter(r => !r.attending).length}
+                              </p>
+                            </div>
+                            <UserX className="w-8 h-8 text-red-600" />
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Total Tamu</p>
+                              <p className="text-2xl font-bold text-blue-600">
+                                {rsvpData.reduce((sum, r) => sum + (r.attending ? r.guests : 0), 0)}
+                              </p>
+                            </div>
+                            <Users className="w-8 h-8 text-blue-600" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Export Button */}
+                      <div className="flex justify-end">
+                        <button
+                          onClick={exportRSVP}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Export CSV</span>
+                        </button>
+                      </div>
+
+                      {/* RSVP List */}
+                      {loadingRSVP ? (
+                        <div className="flex justify-center py-12">
+                          <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                        </div>
+                      ) : rsvpData.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-50 rounded-xl">
+                          <UserCheck className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-600">Belum ada RSVP untuk undangan ini</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50 border-b-2 border-gray-200">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">NAMA</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">EMAIL</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">TAMU</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">STATUS</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">TANGGAL</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">AKSI</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {rsvpData.map(rsvp => (
+                                <tr key={rsvp.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3">
+                                    <div>
+                                      <p className="font-medium text-gray-800">{rsvp.name}</p>
+                                      {rsvp.message && (
+                                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{rsvp.message}</p>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">{rsvp.email}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                      {rsvp.guests}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    {rsvp.attending ? (
+                                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                        Hadir
+                                      </span>
+                                    ) : (
+                                      <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                        Tidak Hadir
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {new Date(rsvp.created_at).toLocaleDateString('id-ID')}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <button
+                                      onClick={() => deleteRSVPEntry(rsvp.id)}
+                                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Hapus"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Guest Book Tab */}
+              {activeTab === 'guestbook' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                      <MessageSquare className="w-6 h-6 mr-2 text-purple-600" />
+                      Buku Tamu
+                    </h2>
+                  </div>
+
+                  {/* Invitation Selector */}
+                  <div className="bg-gradient-to-r from-purple-50 to-cyan-50 rounded-xl p-4 border border-purple-200">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Pilih Undangan
+                    </label>
+                    <select
+                      value={selectedInvitationForGuestBook || ''}
+                      onChange={(e) => {
+                        setSelectedInvitationForGuestBook(e.target.value);
+                        if (e.target.value) loadGuestBookData(e.target.value);
+                      }}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-purple-400 outline-none"
+                    >
+                      <option value="">-- Pilih Undangan --</option>
+                      {invitations.map(inv => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.wedding_templates.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedInvitationForGuestBook && (
+                    <>
+                      {/* Stats and Export */}
+                      <div className="flex items-center justify-between">
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                          <div className="flex items-center space-x-3">
+                            <MessageCircle className="w-8 h-8 text-purple-600" />
+                            <div>
+                              <p className="text-sm text-gray-600">Total Pesan</p>
+                              <p className="text-2xl font-bold text-purple-600">{guestBookData.length}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={exportGuestBook}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Export CSV</span>
+                        </button>
+                      </div>
+
+                      {/* Guest Book Messages */}
+                      {loadingGuestBook ? (
+                        <div className="flex justify-center py-12">
+                          <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                        </div>
+                      ) : guestBookData.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-50 rounded-xl">
+                          <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-600">Belum ada pesan di buku tamu</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {guestBookData.map((entry, index) => (
+                            <div
+                              key={entry.id}
+                              className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
+                              style={{ animationDelay: `${index * 0.1}s` }}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3 mb-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                      {entry.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-gray-800">{entry.name}</h4>
+                                      <p className="text-xs text-gray-500">
+                                        {formatDate(entry.created_at)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-700 leading-relaxed ml-13">
+                                    {entry.message}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => deleteGuestBookEntry(entry.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Hapus"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* WhatsApp Tab */}
+              {activeTab === 'whatsapp' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                      <Send className="w-6 h-6 mr-2 text-green-600" />
+                      WhatsApp Blast
+                    </h2>
+                  </div>
+
+                  {/* Invitation Selector */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Pilih Undangan
+                    </label>
+                    <select
+                      value={selectedInvitationForWhatsApp || ''}
+                      onChange={(e) => {
+                        setSelectedInvitationForWhatsApp(e.target.value);
+                        if (e.target.value) loadGuests(e.target.value);
+                      }}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 outline-none"
+                    >
+                      <option value="">-- Pilih Undangan --</option>
+                      {invitations.map(inv => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.wedding_templates.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedInvitationForWhatsApp && (
+                    <>
+                      {/* Add Guest and Import */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <PlusCircle className="w-5 h-5 mr-2 text-green-600" />
+                            Tambah Tamu
+                          </h3>
+                          <form onSubmit={handleAddGuest} className="space-y-3">
+                            <input
+                              type="text"
+                              value={newGuestName}
+                              onChange={(e) => setNewGuestName(e.target.value)}
+                              placeholder="Nama Tamu"
+                              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-400 outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={newGuestPhone}
+                              onChange={(e) => setNewGuestPhone(e.target.value)}
+                              placeholder="Nomor WhatsApp (628xxx)"
+                              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-400 outline-none"
+                            />
+                            <button
+                              type="submit"
+                              disabled={isAddingGuest}
+                              className="w-full flex items-center justify-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400"
+                            >
+                              {isAddingGuest ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
+                              <span>{isAddingGuest ? 'Menambah...' : 'Tambah Tamu'}</span>
+                            </button>
+                          </form>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <FileUp className="w-5 h-5 mr-2 text-blue-600" />
+                            Import CSV
+                          </h3>
+                          <input
+                            type="file"
+                            ref={importFileRef}
+                            onChange={handleImportCSV}
+                            accept=".csv"
+                            className="hidden"
+                          />
+                          <button
+                            onClick={() => importFileRef.current?.click()}
+                            disabled={isImporting}
+                            className="w-full flex items-center justify-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                          >
+                            {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            <span>{isImporting ? 'Mengimpor...' : 'Import dari CSV'}</span>
+                          </button>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Format: Nama,Nomor (contoh: John Doe,628123456789)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Message Template */}
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Template Pesan</h3>
+                        <textarea
+                          value={whatsappMessage}
+                          onChange={(e) => setWhatsappMessage(e.target.value)}
+                          rows={8}
+                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-purple-400 outline-none"
+                        />
+                        <p className="text-xs text-gray-600 mt-2">
+                          <strong>Placeholder:</strong> [GUEST_NAME] akan diganti dengan nama tamu, [INVITATION_URL] akan diganti dengan link undangan
+                        </p>
+                      </div>
+
+                      {/* Guest List */}
+                      <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                          Daftar Tamu ({guests.length})
+                        </h3>
+                        
+                        {loadingGuests ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                          </div>
+                        ) : guests.length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            Belum ada tamu. Tambahkan tamu di atas.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-gray-50 border-b-2 border-gray-200">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">NAMA</th>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">TELEPON</th>
+                                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">AKSI</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {guests.map(guest => (
+                                  <tr key={guest.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-gray-800">{guest.name}</td>
+                                    <td className="px-4 py-3 text-gray-600 font-mono text-sm">
+                                      {guest.phone || 'N/A'}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center justify-center space-x-2">
+                                        <button
+                                          onClick={() => handleSendWhatsApp(guest)}
+                                          disabled={!guest.phone || deletingId === guest.id}
+                                          className="flex items-center space-x-1 bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300 text-xs"
+                                        >
+                                          <Send className="w-3 h-3" />
+                                          <span>Kirim</span>
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteGuest(guest)}
+                                          disabled={deletingId === guest.id}
+                                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                          {deletingId === guest.id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                          ) : (
+                                            <Trash2 className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              
             </div>
           </main>
         </div>
@@ -962,12 +1691,12 @@ const handleSaveConfig = () => {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
         }
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;

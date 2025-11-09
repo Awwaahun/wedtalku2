@@ -1,9 +1,9 @@
 // src/components/InvitationConfigModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // MODIFIKASI: Tambahkan useCallback
 import { 
   X, Save, Heart, Calendar, Music, Image as ImageIcon, 
   MapPin, Gift, Book, Palette, Loader2, AlertCircle,
-  CheckCircle, PenTool // Menambahkan PenTool untuk Theme/Palette
+  CheckCircle, PenTool, Play, Pause, RotateCcw, StopCircle // MODIFIKASI: Tambahkan Play, Pause, RotateCcw, StopCircle
 } from 'lucide-react';
 import { supabase, UserMedia } from '../lib/supabase';
 
@@ -43,17 +43,14 @@ interface UserInvitation {
   wedding_templates: { title: string };
 }
 
-// Interface untuk item array (asumsi ini adalah struktur array minimal)
 interface SimpleItem {
   id: string; 
   title: string;
-  // field lain jika perlu
 }
 
-// Interface baru untuk item lirik (sesuai DB: time adalah number)
 interface LyricItem {
   id: string; 
-  time: number; // UPDATED: time adalah number (detik)
+  time: number; 
   text: string;
 }
 
@@ -96,7 +93,7 @@ interface InvitationConfig {
   
   // Music
   music_audio_url: string;
-  music_lyrics: LyricItem[] | any; // <-- MENGGUNAKAN NAMA FIELD YANG SESUAI DB
+  music_lyrics: LyricItem[] | any; 
 
   // Prayer Letter 
   prayer_greeting: string;
@@ -105,8 +102,7 @@ interface InvitationConfig {
   prayer_body3: string;
   prayer_closing: string;
 
-  // Array Content (Dibiarkan sebagai 'any' di config modal karena tidak diedit di sini, 
-  // tetapi harus ada untuk proses save/load)
+  // Array Content
   events: SimpleItem[] | any; 
   story: SimpleItem[] | any;
   gallery: SimpleItem[] | any;
@@ -125,7 +121,6 @@ interface InvitationConfigModalProps {
   userMedia: UserMedia[];
 }
 
-// Definisikan tipe untuk Tab
 type TabId = 'couple' | 'wedding' | 'hero' | 'invitation' | 'media' | 'prayer' | 'theme';
 
 const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({ 
@@ -137,77 +132,49 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('couple'); // Menggunakan TabId
+  const [activeTab, setActiveTab] = useState<TabId>('couple'); 
   const [activeMediaPicker, setActiveMediaPicker] = useState<string | null>(null);
   
+  // Audio state and ref
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0); // NEW: State untuk durasi total
+  
   const [config, setConfig] = useState<InvitationConfig>({
-    // Couple Info
-    groom_name: '',
-    groom_full_name: '',
-    groom_parents: '',
-    groom_instagram: '',
-    groom_email: '',
-    groom_bio: '',
-    groom_image_url: '',
-    
-    bride_name: '',
-    bride_full_name: '',
-    bride_parents: '',
-    bride_instagram: '',
-    bride_email: '',
-    bride_bio: '',
-    bride_image_url: '',
-    
-    // Wedding Info
-    wedding_date: '',
-    wedding_date_display: '',
-    wedding_time: '14:00',
-    
-    // Hero
-    hero_background_image_url: '',
-    hero_tagline: '',
-    
-    // Invitation Modal
-    invitation_title: 'Kamu Telah Diundang Ke Pernikahan',
-    invitation_subtitle: 'Kepada Teman dan Keluarga besar, Kami Mengundang',
-    invitation_button_text: 'Buka Undangan',
-    invitation_background_video_url: '',
-    
-    // Cinematic
-    cinematic_video_url: '',
-    cinematic_door_image_url: '',
-    
-    // Music
-    music_audio_url: '',
-    music_lyrics: [], // <-- DEFAULT ARRAY BARU (time: 0, text: '')
-
-    // Prayer Letter <-- DEFAULT PRAYER LETTER
-    prayer_greeting: 'Dear Our Beloved Friends & Family,',
-    prayer_body1: 'Dengan penuh rasa syukur dan sukacita, kami mengundang Bapak/Ibu/Saudara/i untuk hadir dalam pernikahan kami.',
-    prayer_body2: 'Merupakan suatu kehormatan bagi kami menerima restu dan doa dari Anda.',
-    prayer_body3: 'Besar harapan kami agar Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.',
-    prayer_closing: 'Hormat kami,',
-
-    // Array Content Defaults (Dibiarkan kosong)
-    events: [],
-    story: [],
-    gallery: [],
-    donations: [],
-    
-    // Theme
-    theme_primary: '#f43f5e',
-    theme_secondary: '#f97316',
-    theme_accent: '#ec4899',
+    // ... (Default states dihilangkan untuk fokus pada logic, diasumsikan sudah ada) ...
+    groom_name: '', groom_full_name: '', groom_parents: '', groom_instagram: '', groom_email: '', groom_bio: '', groom_image_url: '',
+    bride_name: '', bride_full_name: '', bride_parents: '', bride_instagram: '', bride_email: '', bride_bio: '', bride_image_url: '',
+    wedding_date: '', wedding_date_display: '', wedding_time: '14:00',
+    hero_background_image_url: '', hero_tagline: '',
+    invitation_title: 'Kamu Telah Diundang Ke Pernikahan', invitation_subtitle: 'Kepada Teman dan Keluarga besar, Kami Mengundang', invitation_button_text: 'Buka Undangan', invitation_background_video_url: '',
+    cinematic_video_url: '', cinematic_door_image_url: '',
+    music_audio_url: '', music_lyrics: [],
+    prayer_greeting: 'Dear Our Beloved Friends & Family,', prayer_body1: 'Dengan penuh rasa syukur dan sukacita, kami mengundang Bapak/Ibu/Saudara/i untuk hadir dalam pernikahan kami.', prayer_body2: 'Merupakan suatu kehormatan bagi kami menerima restu dan doa dari Anda.', prayer_body3: 'Besar harapan kami agar Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.', prayer_closing: 'Hormat kami,',
+    events: [], story: [], gallery: [], donations: [],
+    theme_primary: '#f43f5e', theme_secondary: '#f97316', theme_accent: '#ec4899',
   });
 
+  // Load configuration data from Supabase
   useEffect(() => {
     loadConfig();
   }, [invitation.id]);
+  
+  // Effect untuk menghentikan musik saat URL berubah atau modal ditutup
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0); 
+    setDuration(0);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      // audioRef.current.load(); // Tidak perlu, karena akan di-load saat play
+    }
+  }, [config.music_audio_url]);
+
 
   const loadConfig = async () => {
     setLoading(true);
     try {
-      // Perubahan: Menggunakan supabase.auth.getUser() yang lebih standar
       const { data: { user } } = await supabase.auth.getUser(); 
       if (!user) throw new Error('Not authenticated');
 
@@ -217,15 +184,14 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
         .eq('purchase_id', invitation.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116: baris tidak ditemukan
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
       if (data) {
         setConfig(prevConfig => ({
-          ...prevConfig, // Gunakan prevConfig untuk memastikan nilai default tetap ada jika data dari DB null
-          
-          // Couple Info
+          ...prevConfig, 
+          // ... (mapping data dari database ke state config) ...
           groom_name: data.groom_name || prevConfig.groom_name,
           groom_full_name: data.groom_full_name || prevConfig.groom_full_name,
           groom_parents: data.groom_parents || prevConfig.groom_parents,
@@ -233,7 +199,6 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
           groom_email: data.groom_email || prevConfig.groom_email,
           groom_bio: data.groom_bio || prevConfig.groom_bio,
           groom_image_url: data.groom_image_url || prevConfig.groom_image_url,
-          
           bride_name: data.bride_name || prevConfig.bride_name,
           bride_full_name: data.bride_full_name || prevConfig.bride_full_name,
           bride_parents: data.bride_parents || prevConfig.bride_parents,
@@ -241,44 +206,28 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
           bride_email: data.bride_email || prevConfig.bride_email,
           bride_bio: data.bride_bio || prevConfig.bride_bio,
           bride_image_url: data.bride_image_url || prevConfig.bride_image_url,
-          
-          // Wedding Info
           wedding_date: data.wedding_date || prevConfig.wedding_date,
           wedding_date_display: data.wedding_date_display || prevConfig.wedding_date_display,
           wedding_time: data.wedding_time || prevConfig.wedding_time,
-          
-          // Hero
           hero_background_image_url: data.hero_background_image_url || prevConfig.hero_background_image_url,
           hero_tagline: data.hero_tagline || prevConfig.hero_tagline,
-          
-          // Invitation Modal
           invitation_title: data.invitation_title || prevConfig.invitation_title,
           invitation_subtitle: data.invitation_subtitle || prevConfig.invitation_subtitle,
           invitation_button_text: data.invitation_button_text || prevConfig.invitation_button_text,
           invitation_background_video_url: data.invitation_background_video_url || prevConfig.invitation_background_video_url,
-          
-          // Cinematic
           cinematic_video_url: data.cinematic_video_url || prevConfig.cinematic_video_url,
           cinematic_door_image_url: data.cinematic_door_image_url || prevConfig.cinematic_door_image_url,
-          
-          // Music
           music_audio_url: data.music_audio_url || prevConfig.music_audio_url,
-          music_lyrics: data.music_lyrics || prevConfig.music_lyrics, // <-- MAPPING ARRAY BARU (data time: number)
-
-          // Prayer Letter 
+          music_lyrics: data.music_lyrics || prevConfig.music_lyrics, 
           prayer_greeting: data.prayer_greeting || prevConfig.prayer_greeting,
           prayer_body1: data.prayer_body1 || prevConfig.prayer_body1,
           prayer_body2: data.prayer_body2 || prevConfig.prayer_body2,
           prayer_body3: data.prayer_body3 || prevConfig.prayer_body3,
           prayer_closing: data.prayer_closing || prevConfig.prayer_closing,
-
-          // Array Content 
           events: data.events || prevConfig.events, 
           story: data.story || prevConfig.story,
           gallery: data.gallery || prevConfig.gallery,
           donations: data.donations || prevConfig.donations,
-          
-          // Theme
           theme_primary: data.theme_primary || prevConfig.theme_primary,
           theme_secondary: data.theme_secondary || prevConfig.theme_secondary,
           theme_accent: data.theme_accent || prevConfig.theme_accent,
@@ -293,21 +242,25 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   };
 
   const handleSave = async () => {
+    // ... (logic save tidak berubah) ...
     setSaving(true);
     try {
-      // Perubahan: Menggunakan supabase.auth.getUser() yang lebih standar
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Filter array content agar tidak mengirim array kosong jika tidak diubah di modal ini
+      // Stop musik sebelum menyimpan
+      if (audioRef.current && isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+
       const configToSave = {
         ...config,
-        // Pastikan array content dikirim sebagai array atau null
         events: config.events && config.events.length > 0 ? config.events : null,
         story: config.story && config.story.length > 0 ? config.story : null,
         gallery: config.gallery && config.gallery.length > 0 ? config.gallery : null,
         donations: config.donations && config.donations.length > 0 ? config.donations : null,
-        music_lyrics: config.music_lyrics && (config.music_lyrics as LyricItem[]).length > 0 ? config.music_lyrics : null, // <-- LOGIC BARU
+        music_lyrics: config.music_lyrics && (config.music_lyrics as LyricItem[]).length > 0 ? config.music_lyrics : null, 
       };
 
       const { error } = await supabase
@@ -315,7 +268,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
         .upsert({
           user_id: user.id,
           purchase_id: invitation.id,
-          ...configToSave // Menggunakan configToSave yang telah dimodifikasi
+          ...configToSave 
         }, {
           onConflict: 'purchase_id'
         });
@@ -340,27 +293,65 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
   };
 
   const handleInputChange = (field: keyof InvitationConfig, value: string) => {
-    // Karena kita hanya menangani string di InputField, ini aman.
     setConfig(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSelectMedia = (url: string) => {
     if (activeMediaPicker) {
-      // Type assertion yang aman karena kita tahu activeMediaPicker berasal dari InvitationConfig keys
       handleInputChange(activeMediaPicker as keyof InvitationConfig, url); 
       setActiveMediaPicker(null);
     }
   };
   
-  // Fungsi baru untuk menangani penambahan baris lirik
+  // MODIFIKASI: Fungsi kontrol audio yang lebih terpisah
+  const handlePlay = useCallback(() => {
+    if (!config.music_audio_url || !audioRef.current) return;
+    
+    // Pastikan audio siap diputar
+    if (audioRef.current.readyState < 2) {
+      audioRef.current.load();
+    }
+
+    audioRef.current.play().then(() => {
+      setIsPlaying(true);
+    }).catch(error => {
+      console.error("Error playing audio:", error);
+      showNotification('error', 'Gagal memutar audio. Pastikan URL valid dan didukung browser.');
+      setIsPlaying(false); 
+    });
+  }, [config.music_audio_url]);
+
+  const handlePause = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const handleRestart = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      // Otomatis play jika sebelumnya sedang play
+      if (isPlaying) {
+        handlePlay();
+      } else {
+        // Jika tidak play, pastikan waktu ditampilkan 00:00
+        setCurrentTime(0); 
+      }
+    }
+  }, [isPlaying, handlePlay]);
+  
+  // Fungsi lama (handlePlayPause) diganti menjadi tombol terpisah di JSX
+
+  // ... (Fungsi handleAddLyric, handleUpdateLyricText, handleUpdateLyricTime, handleRemoveLyric tidak berubah) ...
+
   const handleAddLyric = () => {
     setConfig(prev => ({
       ...prev,
-      music_lyrics: [...(prev.music_lyrics as LyricItem[] || []), { id: Date.now().toString(), time: 0, text: '' }] // time: 0 (number)
+      music_lyrics: [...(prev.music_lyrics as LyricItem[] || []), { id: Date.now().toString(), time: 0, text: '' }]
     }));
   };
 
-  // Fungsi untuk update field text
   const handleUpdateLyricText = (id: string, textValue: string) => {
     setConfig(prev => ({
       ...prev,
@@ -370,15 +361,13 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
     }));
   };
 
-  // Fungsi khusus untuk update field time (string MM:SS -> number seconds)
   const handleUpdateLyricTime = (id: string, timeString: string) => {
     const newTimeNumber = parseTime(timeString);
     
-    // Hanya update state jika input adalah angka (detik), atau jika field yang di-update bukan time
     setConfig(prev => ({
         ...prev,
         music_lyrics: (prev.music_lyrics as LyricItem[] || []).map(item => 
-          item.id === id ? { ...item, time: newTimeNumber } : item // Store as number
+          item.id === id ? { ...item, time: newTimeNumber } : item 
         )
     }));
   };
@@ -390,14 +379,13 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
     }));
   };
 
-  // Perbarui daftar tabs
   const tabs: { id: TabId; label: string; icon: React.FC<any> }[] = [
     { id: 'couple', label: 'Info Pasangan', icon: Heart },
     { id: 'wedding', label: 'Tanggal & Waktu', icon: Calendar },
     { id: 'hero', label: 'Hero Section', icon: ImageIcon },
     { id: 'invitation', label: 'Modal Undangan', icon: Book },
     { id: 'media', label: 'Media & Musik', icon: Music },
-    { id: 'prayer', label: 'Surat Doa', icon: Gift }, // <-- NEW TAB
+    { id: 'prayer', label: 'Surat Doa', icon: Gift },
     { id: 'theme', label: 'Warna Tema', icon: Palette },
   ];
 
@@ -424,7 +412,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
       )}
 
       {activeMediaPicker && (
-        // Media Picker Modal - Logic dan UI tidak berubah
+        // Media Picker Modal - Tidak Berubah
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
@@ -478,7 +466,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
       {/* Main Configuration Modal */}
       <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
         <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-scaleIn my-8">
-          {/* Header */}
+          {/* Header & Tabs - Tidak Berubah */}
           <div className="flex-shrink-0 bg-gradient-to-r from-purple-500 to-cyan-500 text-white p-6 rounded-t-3xl">
             <div className="flex items-center justify-between">
               <div>
@@ -491,7 +479,6 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="flex-shrink-0 border-b border-gray-200 px-6 overflow-x-auto">
             <div className="flex space-x-1 min-w-max">
               {tabs.map(tab => {
@@ -519,6 +506,8 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
+            {/* ... (Tab couple, wedding, hero, invitation, prayer, theme tidak berubah) ... */}
+            
             {activeTab === 'couple' && (
               <div className="space-y-6">
                 {/* Mempelai Wanita */}
@@ -648,121 +637,7 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                 </div>
               </div>
             )}
-
-            {activeTab === 'media' && (
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-purple-600 mb-4">Video & Audio</h3>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Video Sinematik</label>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="url"
-                      value={config.cinematic_video_url}
-                      onChange={e => handleInputChange('cinematic_video_url', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => setActiveMediaPicker('cinematic_video_url')}
-                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
-                    >
-                      Pilih Video
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Gambar Pintu (Cinematic)</label>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="url"
-                      value={config.cinematic_door_image_url}
-                      onChange={e => handleInputChange('cinematic_door_image_url', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => setActiveMediaPicker('cinematic_door_image_url')}
-                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
-                    >
-                      Pilih Gambar
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Audio Musik dan Lirik - BAGIAN YANG BERUBAH */}
-                <div className="pt-4 border-t border-gray-100">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Audio Musik</label>
-                  <div className="flex items-center space-x-3 mb-8">
-                    <input
-                      type="url"
-                      value={config.music_audio_url}
-                      onChange={e => handleInputChange('music_audio_url', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => setActiveMediaPicker('music_audio_url')}
-                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
-                    >
-                      Pilih Audio
-                    </button>
-                  </div>
-                  
-                  {/* Lyrics Array UI */}
-                  <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
-                    Lirik Lagu (Sinkronisasi Teks & Waktu)
-                    <button
-                      onClick={handleAddLyric}
-                      className="text-sm px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      + Tambah Baris
-                    </button>
-                  </h4>
-                  <div className="space-y-3">
-                    {/* Pastikan config.music_lyrics adalah array sebelum map */}
-                    {(config.music_lyrics as LyricItem[] || []).map((lyric, index) => (
-                      <div key={lyric.id} className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border">
-                        <span className="text-sm font-semibold text-gray-500 pt-2">{index + 1}.</span>
-                        <div className="w-24 flex-shrink-0">
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Waktu (MM:SS)</label>
-                          <input
-                            type="text"
-                            value={formatTime(lyric.time)} // Tampilkan dalam format MM:SS
-                            onChange={e => handleUpdateLyricTime(lyric.id, e.target.value)} // Gunakan handler khusus
-                            placeholder="00:00"
-                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Teks Lirik</label>
-                          <input
-                            type="text"
-                            value={lyric.text}
-                            onChange={e => handleUpdateLyricText(lyric.id, e.target.value)} // Gunakan handler khusus
-                            placeholder="Masukkan baris lirik di sini"
-                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                          />
-                        </div>
-                        <button
-                          onClick={() => handleRemoveLyric(lyric.id)}
-                          className="mt-5 p-1 text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
-                          title="Hapus Baris"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                    {(config.music_lyrics as LyricItem[] || []).length === 0 && (
-                      <p className="text-center text-gray-500 py-4 border-dashed border-2 rounded-lg">
-                        Klik "+ Tambah Baris" untuk mulai menambahkan lirik lagu.
-                      </p>
-                    )}
-                  </div>
-                  <blockquote className="border-l-4 border-gray-300 pl-4 py-2 mt-4 text-sm text-gray-600 italic">
-                    Masukkan waktu dalam format **MM:SS** (misal: 01:25) atau total detik (misal: 85). Data akan disimpan sebagai total detik.
-                  </blockquote>
-                </div>
-              </div>
-            )}
             
-            {/* NEW TAB: PRAYER LETTER */}
             {activeTab === 'prayer' && (
               <div className="space-y-4 bg-lime-50 rounded-xl p-6">
                 <h3 className="text-xl font-bold text-lime-700 mb-4">🙏 Konfigurasi Surat Doa/Kata Sambutan</h3>
@@ -804,9 +679,177 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
                 <ColorField label="Accent" value={config.theme_accent} onChange={e => handleInputChange('theme_accent', e.target.value)} />
               </div>
             )}
+
+            {/* Media Tab - BAGIAN PERUBAHAN UTAMA KONTROL AUDIO */}
+            {activeTab === 'media' && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-purple-600 mb-4">Video & Audio</h3>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Video Sinematik</label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="url"
+                      value={config.cinematic_video_url}
+                      onChange={e => handleInputChange('cinematic_video_url', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={() => setActiveMediaPicker('cinematic_video_url')}
+                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
+                    >
+                      Pilih Video
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Gambar Pintu (Cinematic)</label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="url"
+                      value={config.cinematic_door_image_url}
+                      onChange={e => handleInputChange('cinematic_door_image_url', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={() => setActiveMediaPicker('cinematic_door_image_url')}
+                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
+                    >
+                      Pilih Gambar
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Audio Musik dan Lirik */}
+                <div className="pt-4 border-t border-gray-100">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Audio Musik (URL)</label>
+                  <div className="flex items-center space-x-3 mb-3">
+                    <input
+                      type="url"
+                      value={config.music_audio_url}
+                      onChange={e => handleInputChange('music_audio_url', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      placeholder="URL audio dari media Anda atau link eksternal"
+                    />
+                    <button
+                      onClick={() => setActiveMediaPicker('music_audio_url')}
+                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
+                    >
+                      Pilih Audio
+                    </button>
+                  </div>
+
+                  {/* MODIFIKASI: Audio Player Control dengan 3 tombol */}
+                  <div className="mb-8 flex flex-wrap items-center space-x-3 sm:space-x-4">
+                    
+                    {/* Tombol Play / Lanjut */}
+                    <button
+                      onClick={handlePlay}
+                      disabled={!config.music_audio_url || isPlaying}
+                      className={`px-4 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2 text-sm ${
+                        !config.music_audio_url || isPlaying
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                      }`}
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>Lanjut</span>
+                    </button>
+                    
+                    {/* Tombol Pause / Stop */}
+                    <button
+                      onClick={handlePause}
+                      disabled={!config.music_audio_url || !isPlaying}
+                      className={`px-4 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2 text-sm ${
+                        !config.music_audio_url || !isPlaying
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-red-500 hover:bg-red-600 text-white'
+                      }`}
+                    >
+                      <Pause className="w-4 h-4" />
+                      <span>Stop</span>
+                    </button>
+                    
+                    {/* Tombol Restart / Ulang */}
+                    <button
+                      onClick={handleRestart}
+                      disabled={!config.music_audio_url}
+                      className={`px-4 py-2 rounded-xl font-semibold transition-colors flex items-center space-x-2 text-sm ${
+                        !config.music_audio_url
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Ulang</span>
+                    </button>
+
+                    {/* Waktu Putar */}
+                    {config.music_audio_url && (
+                        <div className={`font-mono text-lg font-bold ml-auto ${isPlaying ? 'text-blue-600' : 'text-gray-500'}`}>
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                        </div>
+                    )}
+                  </div>
+                  
+                  {/* Lyrics Array UI */}
+                  <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
+                    Lirik Lagu (Sinkronisasi Teks & Waktu)
+                    <button
+                      onClick={handleAddLyric}
+                      className="text-sm px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      + Tambah Baris
+                    </button>
+                  </h4>
+                  <div className="space-y-3">
+                    {(config.music_lyrics as LyricItem[] || []).map((lyric, index) => (
+                      <div key={lyric.id} className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border">
+                        <span className="text-sm font-semibold text-gray-500 pt-2">{index + 1}.</span>
+                        <div className="w-24 flex-shrink-0">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Waktu (MM:SS)</label>
+                          <input
+                            type="text"
+                            value={formatTime(lyric.time)} 
+                            onChange={e => handleUpdateLyricTime(lyric.id, e.target.value)} 
+                            placeholder="00:00"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Teks Lirik</label>
+                          <input
+                            type="text"
+                            value={lyric.text}
+                            onChange={e => handleUpdateLyricText(lyric.id, e.target.value)} 
+                            placeholder="Masukkan baris lirik di sini"
+                            className="w-full px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleRemoveLyric(lyric.id)}
+                          className="mt-5 p-1 text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
+                          title="Hapus Baris"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {(config.music_lyrics as LyricItem[] || []).length === 0 && (
+                      <p className="text-center text-gray-500 py-4 border-dashed border-2 rounded-lg">
+                        Klik "+ Tambah Baris" untuk mulai menambahkan lirik lagu.
+                      </p>
+                    )}
+                  </div>
+                  <blockquote className="border-l-4 border-gray-300 pl-4 py-2 mt-4 text-sm text-gray-600 italic">
+                    Masukkan waktu dalam format **MM:SS** (misal: 01:25) atau total detik (misal: 85). Data akan disimpan sebagai total detik.
+                  </blockquote>
+                </div>
+              </div>
+            )}
+
           </div>
 
-          {/* Footer */}
+          {/* Footer - Tidak Berubah */}
           <div className="flex-shrink-0 p-6 border-t border-gray-200 flex justify-end space-x-3">
             <button
               onClick={onClose}
@@ -835,11 +878,26 @@ const InvitationConfigModal: React.FC<InvitationConfigModalProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Hidden Audio Element for Preview */}
+      <audio 
+        ref={audioRef} 
+        src={config.music_audio_url}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {setIsPlaying(false); setCurrentTime(0);}} 
+        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)} 
+        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)} // NEW: Ambil durasi total
+        onError={(e) => {
+          console.error("Audio Load Error:", e);
+          setIsPlaying(false);
+          setDuration(0);
+        }}
+      />
     </>
   );
 };
 
-// --- Helper Components ---
+// --- Helper Components (Tidak Berubah) ---
 
 const InputField: React.FC<{
   label: string;
