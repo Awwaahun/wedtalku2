@@ -9,7 +9,11 @@ interface Message {
   created_at: string;
 }
 
-export default function GuestBook() {
+interface GuestBookProps {
+  invitationId: string; // ADD THIS
+}
+
+export default function GuestBook({ invitationId }: GuestBookProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
@@ -23,6 +27,7 @@ export default function GuestBook() {
     const { data, error } = await supabase
       .from('guest_book')
       .select('*')
+      .eq('invitation_id', invitationId)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -42,6 +47,7 @@ export default function GuestBook() {
         {
           name: name.trim(),
           message: message.trim(),
+          invitation_id: invitationId,
         },
       ]);
 

@@ -195,10 +195,10 @@ function App({ invitationId, userConfig }: TemplateProps) {
             <div id="event"><EventDetails config={weddingConfig} /></div>
             <div id="gallery"><Gallery config={weddingConfig} /></div>
             <div id="donation"><Donation config={weddingConfig} /></div>
-            <div id="rsvp"><RSVP /></div>
+            <div id="rsvp"><RSVP invitationId={invitationId} /></div>
             <div id="prayer"><PrayerDisplay /></div>
             <PrayerLetter config={weddingConfig} />
-            <GuestBook />
+            <GuestBook invitationId={invitationId} />
           </main>
 
           {showMusicButton && (

@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { Heart, Send } from 'lucide-react';
 import  { supabase }  from '../supabase';
 
-export default function RSVP() {
+
+interface RSVPProps {
+  invitationId: string; // ADD THIS
+}
+
+export default function RSVP({ invitationId }: RSVPProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,6 +32,7 @@ export default function RSVP() {
           attending: formData.attending === 'yes',
           dietary_requirements: formData.dietary,
           message: formData.message,
+          invitation_id: invitationId,
         },
       ]);
 
