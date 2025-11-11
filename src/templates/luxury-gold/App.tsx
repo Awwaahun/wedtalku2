@@ -23,6 +23,7 @@ import { useMergedConfig } from './hooks/useMergedConfig';
 import { UserInvitationConfig } from '../../lib/supabase';
 import LoginModal from './components/LoginModal';
 import ClientDashboard from './components/ClientDashboard';
+import  FloatingNavbar from './components/FloatingNavbar';
 import './index.css';
 
 interface TemplateProps {
@@ -155,37 +156,7 @@ function App({ invitationId, userConfig }: TemplateProps) {
           
           {mainVisible && <FloralDecorations activeSection={activeSection} />}
           
-          <nav
-            className={`fixed top-0 w-full z-[60] transition-all duration-300 ${
-              scrolled ? 'bg-white/80 backdrop-blur-sm shadow-md py-4' : 'bg-transparent py-6'
-            }`}
-          >
-            <div className="container mx-auto px-4">
-              <div className="flex justify-center items-center space-x-3 md:space-x-6">
-                {[
-                  { icon: Heart, label: 'Home', id: 'hero' },
-                  { icon: UserCircle, label: 'Couple', id: 'couple' },
-                  { icon: Users, label: 'Story', id: 'story' },
-                  { icon: Calendar, label: 'Event', id: 'event' },
-                  { icon: Gift, label: 'Gallery', id: 'gallery' },
-                  { icon: Wallet, label: 'Gift', id: 'donation' },
-                  { icon: MessageCircle, label: 'RSVP', id: 'rsvp' },
-                  { icon: Send, label: 'Prayer', id: 'prayer' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => scrollToSection(item.id)}
-                    className={`flex flex-col md:flex-row items-center space-x-0 md:space-x-2 transition-colors duration-300 ${
-                      scrolled ? 'text-text/80 hover:text-primary' : 'text-white/90 hover:text-white'
-                    } ${activeSection === item.id ? (scrolled ? 'text-primary' : 'text-white font-bold') : ''}`}
-                  >
-                    <item.icon size={18} />
-                    <span className="hidden md:inline text-sm font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </nav>
+          <FloatingNavbar activeSection={activeSection} scrollToSection={scrollToSection} />
 
           <main>
             <div id="hero"><Hero onAdminAccess={handleAdminAccess} config={weddingConfig} /></div>
