@@ -135,15 +135,6 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({
           <Heart className={`w-5 h-5 transition-all ${isLiked ? 'fill-current' : ''}`} />
           <span className="text-[11px] font-semibold mt-0.5">{portfolio.likes_count || 0}</span>
         </button>
-
-        <button
-          onClick={handleViewClick}
-          className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-white/80 backdrop-blur-md text-gray-700 hover:bg-white transition-all hover:scale-110 border border-white/30 shadow-md"
-          title="Lihat Detail"
-        >
-          <Eye className="w-5 h-5" />
-          <span className="text-[11px] font-semibold mt-0.5">{portfolio.views_count || 0}</span>
-        </button>
       </div>
 
       {/* Soft color glow */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Heart, Calendar, MapPin, Sparkles, ExternalLink, Eye, Copy, CheckCircle } from 'lucide-react';
-import { PortfolioWithUser, incrementPortfolioViews } from '../lib/supabase';
+import { PortfolioWithUser } from '../lib/supabase';
 
 interface PortfolioDetailModalProps {
   portfolio: PortfolioWithUser | null;
