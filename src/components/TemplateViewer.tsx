@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 // Lazy load templates
 const ModernMinimalistTemplate = lazy(() => import('../templates/modern-minimalist/App'));
 const LuxuryGoldTemplate = lazy(() => import('../templates/luxury-gold/App'));
+const RusticElegantTemplate = lazy(() => import('../templates/rustic-elegant/App'));
 import { supabase, UserInvitationConfig, incrementTemplateViews } from '../lib/supabase';
 
 // Template registry - maps template_code to component
@@ -12,6 +13,8 @@ const TEMPLATE_REGISTRY: Record<string, React.LazyExoticComponent<React.Componen
   'modern-minimalist': ModernMinimalistTemplate,
   'luxury-gold':
     LuxuryGoldTemplate,
+    'rustic-elegant':
+    RusticElegantTemplate,
   // Add more templates here as you create them:
   // 'classic-elegance': lazy(() => import('../templates/classic-elegance/App')),
   // 'minimal-chic': lazy(() => import('../templates/minimal-chic/App')),
