@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Heart, Calendar, MapPin, Sparkles, ExternalLink, Eye, Copy, CheckCircle } from 'lucide-react';
-import { PortfolioWithUser } from '../lib/supabase';
+import { PortfolioWithUser, incrementPortfolioViews } from '../lib/supabase';
 
 interface PortfolioDetailModalProps {
   portfolio: PortfolioWithUser | null;
@@ -17,7 +17,8 @@ const PortfolioDetailModal: React.FC<PortfolioDetailModalProps> = ({
 }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
-
+  
+  
   if (!portfolio) return null;
 
   const handleLikeClick = (e: React.MouseEvent) => {

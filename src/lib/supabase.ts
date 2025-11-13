@@ -172,3 +172,31 @@ export interface UserInvitationConfig {
 
 export type TemplateComponent = React.LazyExoticComponent<React.ComponentType<any>>;
 export type TemplateRegistry = Record<string, TemplateComponent>;
+
+export const incrementTemplateViews = async (templateId: string): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc('increment_template_views', {
+      template_uuid: templateId
+    });
+    
+    if (error) {
+      console.error('Error incrementing template views:', error);
+    }
+  } catch (error) {
+    console.error('Error in incrementTemplateViews:', error);
+  }
+};
+
+export const incrementPortfolioViews = async (portfolioId: string): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc('increment_portfolio_views', {
+      portfolio_uuid: portfolioId
+    });
+    
+    if (error) {
+      console.error('Error incrementing portfolio views:', error);
+    }
+  } catch (error) {
+    console.error('Error in incrementPortfolioViews:', error);
+  }
+};

@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 // Lazy load templates
 const ModernMinimalistTemplate = lazy(() => import('../templates/modern-minimalist/App'));
 const LuxuryGoldTemplate = lazy(() => import('../templates/luxury-gold/App'));
-import { supabase, UserInvitationConfig } from '../lib/supabase';
+import { supabase, UserInvitationConfig, incrementTemplateViews } from '../lib/supabase';
 
 // Template registry - maps template_code to component
 const TEMPLATE_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
@@ -80,7 +80,9 @@ const loadInvitationData = async () => {
     if (configData) {
       setUserConfig(configData);
     }
-
+    if (data.template_id) {
+      incrementTemplateViews(data.template_id);
+    }
   } catch (err: any) {
     console.error('Error loading invitation:', err);
     setError(err.message || 'Gagal memuat undangan');

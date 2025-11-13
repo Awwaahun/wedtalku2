@@ -5,7 +5,7 @@ import {
   Download, Sparkles, CheckCircle2, X, Monitor,
   Gift, Music, Map, Image as ImageIcon, User, Loader2
 } from 'lucide-react';
-import { WeddingTemplate, supabase } from '../lib/supabase';
+import { WeddingTemplate, supabase, incrementTemplateViews } from '../lib/supabase';
 
 interface TemplateDetailProps {
   template: WeddingTemplate;
@@ -69,7 +69,7 @@ export default function TemplateDetail({
         console.error('Error in fetchUserRating:', error);
       }
     };
-    
+    incrementTemplateViews(template.id);
     fetchUserRating();
   }, [template.id]);
 
