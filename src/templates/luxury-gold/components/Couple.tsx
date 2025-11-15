@@ -9,60 +9,91 @@ interface CoupleProps {
 export default function Couple({ config }: CoupleProps) {
   const { bride, groom } = config.couple;
 
+  // Komponen Kartu Pasangan yang Ditingkatkan
   const CoupleCard = ({ person, reverse }: { person: typeof bride; reverse?: boolean }) => {
-    const { elementRef, isVisible } = useScrollAnimation();
+    // Asumsi hook useScrollAnimation sudah didefinisikan
+    const { elementRef, isVisible } = useScrollAnimation(); 
+
+    // Tentukan kelas animasi masuk:
+    // Jika reverse (Groom), masuk dari KIRI (translate-x negatif)
+    // Jika tidak reverse (Bride), masuk dari KANAN (translate-x positif)
+    const startAnimationClass = reverse 
+        ? 'opacity-0 -translate-x-24' // Groom (reverse=true) starts left
+        : 'opacity-0 translate-x-24';  // Bride (reverse=false) starts right
+        
+    const endAnimationClass = 'opacity-100 translate-x-0';
+
 
     return (
       <div
         ref={elementRef}
+        // Menggunakan logika animasi horizontal baru
         className={`flex flex-col ${
           reverse ? 'md:flex-row-reverse' : 'md:flex-row'
-        } gap-10 items-center transition-all duration-700 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        } gap-8 md:gap-12 items-center transition-all duration-1000 ${
+          isVisible ? endAnimationClass : startAnimationClass
         }`}
       >
-        <div className="md:w-5/12 relative">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-400/30 to-amber-100/20 blur-xl"></div>
+        {/* Kolom Gambar */}
+        <div className="md:w-5/12 relative flex justify-center">
+          {/* Bingkai Ornamen Gambar (Ganti blur dengan border yang elegan) */}
+          <div className="absolute inset-0 top-4 left-4 right-4 bottom-4 rounded-3xl border-4 border-amber-300/60 opacity-60 transition-transform duration-700 group-hover:scale-[1.03] group-hover:opacity-80 hidden md:block" />
+          
           <img
             src={person.image}
             alt={person.name}
-            className="relative rounded-2xl w-full h-96 object-cover shadow-xl border border-amber-200/40 backdrop-blur-sm transition-transform hover:scale-105 duration-700"
+            // Gaya Gambar: Rounded yang lebih halus, shadow yang lebih dalam
+            className="relative rounded-3xl w-full h-96 object-cover shadow-2xl shadow-black/20 border-4 border-white/50 transition-transform hover:scale-[1.02] duration-700 max-w-sm md:max-w-full"
           />
         </div>
 
-        <div className="md:w-7/12 text-center md:text-left bg-white/30 backdrop-blur-md border border-amber-300/50 p-8 rounded-2xl shadow-[0_0_30px_rgba(255,215,100,0.2)]">
-          <p className="text-amber-600 font-medium mb-2">{person.role}</p>
-          <h3 className="text-4xl md:text-5xl font-serif text-amber-800 mb-2">{person.name}</h3>
-          <p className="text-lg text-gray-600 mb-4 italic">{person.fullName}</p>
+        {/* Kolom Deskripsi */}
+        <div 
+          className="md:w-7/12 text-center md:text-left bg-white/90 p-8 sm:p-10 rounded-2xl 
+            border border-amber-500/30 
+            shadow-[0_10px_30px_rgba(180,120,40,0.1)] 
+            transition-all duration-500 hover:shadow-[0_15px_40px_rgba(180,120,40,0.2)]"
+        >
+          
+          <p className="text-sm uppercase tracking-widest font-medium text-amber-600 mb-2">{person.role}</p>
+          
+          {/* Nama: Lebih Besar, Emas Gradien */}
+          <h3 className="text-5xl md:text-6xl font-playfair font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-700 to-amber-900 mb-2 drop-shadow-sm">
+            {person.name}
+          </h3>
+          
+          <p className="text-xl text-gray-700 mb-4 font-script italic">{person.fullName}</p> 
 
-          <div className="flex items-center justify-center md:justify-start space-x-2 mb-6">
-            <div className="h-px w-12 bg-amber-400/70"></div>
-            <Heart className="text-amber-500" size={16} fill="currentColor" />
-            <div className="h-px w-12 bg-amber-400/70"></div>
+          {/* Garis Dekoratif Tengah */}
+          <div className={`flex items-center space-x-3 mb-6 ${reverse ? 'md:justify-end' : 'md:justify-start'} justify-center`}>
+            <div className="h-px w-10 bg-amber-500/70" />
+            <Heart className="text-amber-600" size={18} fill="currentColor" />
+            <div className="h-px w-10 bg-amber-500/70" />
           </div>
 
-          <p className="text-gray-700 leading-relaxed mb-4">{person.bio}</p>
-          <p className="text-gray-500 italic mb-6">{person.parents}</p>
+          <p className="text-gray-700 leading-relaxed mb-4 text-base italic">{person.bio}</p>
+          <p className="text-gray-500 italic mb-6 text-sm">{person.parents}</p>
 
-          <div className="flex items-center justify-center md:justify-start space-x-4">
+          {/* Social Media Link: Lebih Rapi */}
+          <div className={`flex items-center space-x-6 pt-4 border-t border-amber-200/50 ${reverse ? 'md:justify-end' : 'md:justify-start'} justify-center`}>
             {person.instagram && (
               <a
                 href={`https://instagram.com/${person.instagram.replace('@', '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-gray-600 hover:text-amber-600 transition-colors"
+                className="flex items-center space-x-2 text-amber-700 hover:text-amber-900 transition-colors group"
               >
-                <Instagram size={20} />
-                <span className="text-sm">{person.instagram}</span>
+                <Instagram size={20} className="group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium">{person.instagram}</span>
               </a>
             )}
             {person.email && (
               <a
                 href={`mailto:${person.email}`}
-                className="flex items-center space-x-2 text-gray-600 hover:text-amber-600 transition-colors"
+                className="flex items-center space-x-2 text-amber-700 hover:text-amber-900 transition-colors group"
               >
-                <Mail size={20} />
-                <span className="text-sm">{person.email}</span>
+                <Mail size={20} className="group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium">Kirim Pesan</span>
               </a>
             )}
           </div>
@@ -72,27 +103,53 @@ export default function Couple({ config }: CoupleProps) {
   };
 
   return (
-    <div className="py-20 bg-gradient-to-br from-[#fff9ef] via-[#fff8e9] to-[#fff5dc]">
+    // Latar Belakang: Gradien Krem yang Lebih Lembut
+    <div className="py-20 bg-gradient-to-br from-[#fef7e8] via-[#fffaf3] to-[#fcf5e6]">
       <div className="container mx-auto px-4">
+        
+        {/* Judul Bagian */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-amber-800 mb-4">
+          <p className="text-lg text-amber-600 font-script italic mb-1">Our Journey Begins</p>
+          <h2 className="text-4xl md:text-5xl font-playfair font-extrabold text-amber-900 mb-4">
             Perkenalkan Kami
           </h2>
-          <p className="text-gray-600">Dua Jiwa, Satu Hati</p>
+          <p className="text-gray-600 text-sm tracking-wider uppercase">Dua Jiwa, Satu Hati, Satu Tujuan</p>
         </div>
 
-        <div className="max-w-6xl mx-auto space-y-20">
+        <div className="max-w-6xl mx-auto space-y-24">
+          
+          {/* Bride Card (reverse=false) - Masuk dari KANAN */}
           <CoupleCard person={bride} />
 
+          {/* Divider Jantung yang Lebih Berkelas */}
           <div className="flex justify-center">
-            <div className="bg-white/40 backdrop-blur-md border border-amber-300/40 rounded-full p-6 shadow-[0_0_25px_rgba(255,215,100,0.3)] animate-pulse-gold">
-              <Heart className="text-amber-500" size={48} fill="currentColor" />
+            <div className="relative bg-amber-100/50 border border-amber-300/80 rounded-full p-4 shadow-xl shadow-amber-900/10 transition-transform duration-500 hover:scale-110">
+              <Heart className="text-amber-700" size={36} fill="currentColor" />
+              <div className="absolute inset-0 rounded-full border-4 border-double border-amber-400/40 animate-ping-slow pointer-events-none" />
             </div>
           </div>
 
+          {/* Groom Card (reverse=true) - Masuk dari KIRI */}
           <CoupleCard person={groom} reverse />
         </div>
       </div>
+
+      <style>
+        {`
+          /* Custom Font Fallback/Class */
+          .font-playfair { font-family: 'Playfair Display', serif; }
+          .font-script { font-family: 'Great Vibes', cursive; }
+
+          /* Animasi Ping Lambat */
+          @keyframes ping-slow {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+          }
+          .animate-ping-slow {
+            animation: ping-slow 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+          }
+        `}
+      </style>
     </div>
   );
 }

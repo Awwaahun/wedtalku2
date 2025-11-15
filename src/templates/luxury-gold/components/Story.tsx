@@ -1,7 +1,7 @@
-import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { useScrollAnimation } from "../hooks/useScrollAnimation";
-import type { WeddingConfig } from "../hooks/useWeddingConfig";
+import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import type { WeddingConfig } from '../hooks/useWeddingConfig';
 
 interface StoryProps {
   config: WeddingConfig;
@@ -16,88 +16,129 @@ export default function Story({ config }: StoryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const stories = config.story;
-  const minSwipeDistance = 50;
-  const { elementRef, isVisible } = useScrollAnimation();
 
+  const minSwipeDistance = 50;
+
+  // --- Handlers for Swipe/Drag (TIDAK BERUBAH) ---
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX);
     setIsDragging(true);
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    const diff = e.touches[0].clientX - touchStart;
+    const currentTouch = e.touches[0].clientX;
+    const diff = currentTouch - touchStart;
     setOffset(diff);
-    setTouchEnd(e.touches[0].clientX);
+    setTouchEnd(currentTouch);
   };
+
   const handleTouchEnd = () => {
     setIsDragging(false);
     setOffset(0);
+
     if (!touchStart || !touchEnd) return;
+
     const distance = touchStart - touchEnd;
-    if (distance > minSwipeDistance && currentSlide < stories.length - 1)
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentSlide < stories.length - 1) {
       setCurrentSlide(currentSlide + 1);
-    if (distance < -minSwipeDistance && currentSlide > 0)
+    }
+    if (isRightSwipe && currentSlide > 0) {
       setCurrentSlide(currentSlide - 1);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setTouchStart(e.clientX);
     setIsDragging(true);
   };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const diff = e.clientX - touchStart;
     setOffset(diff);
     setTouchEnd(e.clientX);
   };
+
   const handleMouseUp = () => {
     setIsDragging(false);
     setOffset(0);
+
     if (!touchStart || !touchEnd) return;
+
     const distance = touchStart - touchEnd;
-    if (distance > minSwipeDistance && currentSlide < stories.length - 1)
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentSlide < stories.length - 1) {
       setCurrentSlide(currentSlide + 1);
-    if (distance < -minSwipeDistance && currentSlide > 0)
+    }
+    if (isRightSwipe && currentSlide > 0) {
       setCurrentSlide(currentSlide - 1);
+    }
   };
 
-  const nextSlide = () =>
-    currentSlide < stories.length - 1 && setCurrentSlide(currentSlide + 1);
-  const prevSlide = () =>
-    currentSlide > 0 && setCurrentSlide(currentSlide - 1);
+  const nextSlide = () => {
+    if (currentSlide < stories.length - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+  };
 
+  const prevSlide = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+  };
+  // --- End Handlers ---
+
+  const { elementRef, isVisible } = useScrollAnimation();
+
+  // Auto-slide logic (dipertahankan)
   useEffect(() => {
-    const timer = setInterval(
-      () => setCurrentSlide((p) => (p + 1) % stories.length),
-      6000
-    );
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % stories.length);
+    }, 5000);
+
     return () => clearInterval(timer);
   }, [stories.length]);
 
   return (
-    <div className="py-20 bg-gradient-to-b from-[#fffaf3] to-[#fff5e4] overflow-hidden">
-      <div className="container mx-auto px-4">
+    <div className="relative py-20 overflow-hidden">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-fixed" // bg-fixed untuk parallax sederhana
+        style={{ backgroundImage: `url(${config.hero.backgroundImage})` }}
+      />
+      
+      {/* Overlay: Gelap/Krem Transparan untuk Kontras Teks */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#fefbf5]/90 via-[#f9f4ec]/85 to-[#f7f0e7]/90 backdrop-blur-[1px]" />
+
+      <div className="relative z-10 container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-amber-800 mb-4">
+          <p className="text-lg text-amber-600 font-script italic mb-1 drop-shadow-sm">Our Milestones</p>
+          <h2 className="text-4xl md:text-5xl font-playfair font-extrabold text-amber-900 mb-4 drop-shadow-md">
             Kisah Cinta Kami
           </h2>
+          {/* Divider bertema emas */}
           <div className="flex items-center justify-center space-x-4">
-            <div className="h-px w-16 bg-amber-300/70"></div>
-            <Heart className="text-amber-500" size={20} fill="currentColor" />
-            <div className="h-px w-16 bg-amber-300/70"></div>
+            <div className="h-px w-16 bg-amber-400/70"></div>
+            <Heart className="text-amber-700 drop-shadow-sm" size={20} fill="currentColor" />
+            <div className="h-px w-16 bg-amber-400/70"></div>
           </div>
         </div>
 
-        <div
+        <div 
           ref={elementRef}
-          className={`relative max-w-6xl mx-auto animate-on-scroll ${
-            isVisible ? "visible" : ""
-          }`}
+          className={`relative z-20 max-w-6xl mx-auto transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
         >
-          {/* Carousel */}
+          {/* Carousel Container: Lebih Mewah */}
           <div
             ref={containerRef}
-            className="relative overflow-hidden rounded-3xl border border-amber-300/40 shadow-[0_0_30px_rgba(255,215,100,0.25)] bg-white/30 backdrop-blur-md cursor-grab active:cursor-grabbing transition-all duration-700"
+            // Shadow dan Border Lebih Kuat & Ganda
+            className="relative overflow-hidden rounded-3xl shadow-[0_20px_50px_rgba(31,30,26,0.2)] cursor-grab active:cursor-grabbing border-4 border-double border-amber-400/70"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -107,47 +148,51 @@ export default function Story({ config }: StoryProps) {
             onMouseLeave={handleMouseUp}
           >
             <div
-              className="flex transition-transform duration-700 ease-out"
+              className="flex transition-transform duration-700 ease-out" // Durasi transisi diperlambat sedikit
               style={{
-                transform: isDragging
+                transform: isDragging 
                   ? `translateX(calc(-${currentSlide * 100}% + ${offset}px))`
                   : `translateX(-${currentSlide * 100}%)`,
               }}
             >
-              {stories.map((story, i) => (
+              {stories.map((story, index) => (
                 <div
-                  key={i}
-                  className="min-w-full flex flex-col md:flex-row items-center gap-10 p-10 md:p-14 bg-gradient-to-br from-white/50 to-amber-50/40"
+                  key={index}
+                  // Latar belakang slide dengan subtle gradient
+                  className="min-w-full flex flex-col md:flex-row items-center gap-10 p-10 md:p-16 bg-white/95"
                 >
-                  {/* Image */}
-                  <div className="md:w-1/2 relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-transparent rounded-2xl blur-xl"></div>
-                    <img
-                      src={story.image}
-                      alt={story.title}
-                      className="relative w-full h-80 md:h-96 rounded-2xl object-cover shadow-xl border border-amber-200/40 transition-transform duration-700 hover:scale-105"
-                      draggable="false"
-                    />
+                  {/* Image Section */}
+                  <div className="md:w-1/2 w-full order-1 md:order-none">
+                    <div className="relative group">
+                      {/* Bingkai Emas dengan Posisi yang sedikit offset */}
+                      <div className="absolute inset-4 bg-amber-400/50 rounded-2xl transform rotate-1 group-hover:rotate-2 transition-transform duration-500 shadow-md"></div>
+                      <img
+                        src={story.image}
+                        alt={story.title}
+                        // Gambar lebih menonjol dengan border ganda
+                        className="relative rounded-2xl w-full h-80 md:h-96 object-cover shadow-2xl shadow-black/30 border-4 border-amber-100/80 transform group-hover:scale-[1.03] transition-transform duration-500"
+                        draggable="false"
+                      />
+                    </div>
                   </div>
 
-                  {/* Text */}
-                  <div className="md:w-1/2 text-center md:text-left bg-white/40 backdrop-blur-md border border-amber-300/40 rounded-2xl p-8 shadow-[0_0_20px_rgba(255,215,100,0.15)]">
-                    <div className="inline-block bg-gradient-to-r from-amber-500 to-yellow-400 text-white px-5 py-2 rounded-full text-sm font-medium mb-4 shadow-md">
+                  {/* Content Section */}
+                  <div className="md:w-1/2 w-full text-center md:text-left order-2 md:order-none">
+                    {/* Badge Tanggal dengan efek 3D */}
+                    <div className="inline-block bg-amber-700 text-white px-5 py-2 rounded-full text-sm font-medium mb-4 shadow-lg border-b-4 border-amber-900/50 uppercase tracking-widest">
                       {story.date}
                     </div>
-                    <h3 className="text-4xl md:text-5xl font-serif text-amber-800 mb-4">
+                    {/* Judul dengan Gradien Emas Penuh */}
+                    <h3 className="text-4xl md:text-5xl font-playfair font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-700 mb-6 drop-shadow-md">
                       {story.title}
                     </h3>
+                    {/* Divider bertema emas */}
                     <div className="flex items-center justify-center md:justify-start space-x-2 mb-6">
-                      <div className="h-px w-12 bg-amber-400/60"></div>
-                      <Heart
-                        className="text-amber-500"
-                        size={16}
-                        fill="currentColor"
-                      />
-                      <div className="h-px w-12 bg-amber-400/60"></div>
+                      <div className="h-px w-12 bg-amber-500/80"></div>
+                      <Heart className="text-amber-700 drop-shadow-sm" size={18} fill="currentColor" />
+                      <div className="h-px w-12 bg-amber-500/80"></div>
                     </div>
-                    <p className="text-gray-700 text-lg leading-relaxed">
+                    <p className="text-gray-700 text-lg leading-relaxed italic border-l-4 border-amber-300/80 pl-4">
                       {story.description}
                     </p>
                   </div>
@@ -155,64 +200,86 @@ export default function Story({ config }: StoryProps) {
               ))}
             </div>
 
-            {/* Arrows */}
+            {/* Navigation Arrows: Lebih Mewah (Tombol Besar, Sudut Penuh, Warna Solid) */}
             <button
               onClick={prevSlide}
               disabled={currentSlide === 0}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/90 border border-amber-300/50 p-3 rounded-full shadow-lg transition-all duration-300 ${
-                currentSlide === 0
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:scale-110"
+              className={`absolute left-0 top-1/2 -translate-y-1/2 bg-amber-800/80 hover:bg-amber-700 p-4 rounded-r-full shadow-2xl transition-all duration-300 z-30 ${
+                currentSlide === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:scale-x-105 text-white'
               }`}
             >
-              <ChevronLeft className="text-amber-700" size={24} />
+              <ChevronLeft size={28} />
             </button>
+
             <button
               onClick={nextSlide}
               disabled={currentSlide === stories.length - 1}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/90 border border-amber-300/50 p-3 rounded-full shadow-lg transition-all duration-300 ${
-                currentSlide === stories.length - 1
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:scale-110"
+              className={`absolute right-0 top-1/2 -translate-y-1/2 bg-amber-800/80 hover:bg-amber-700 p-4 rounded-l-full shadow-2xl transition-all duration-300 z-30 ${
+                currentSlide === stories.length - 1 ? 'opacity-40 cursor-not-allowed' : 'hover:scale-x-105 text-white'
               }`}
             >
-              <ChevronRight className="text-amber-700" size={24} />
+              <ChevronRight size={28} />
             </button>
           </div>
 
-          {/* Dots */}
+          {/* Dots Indicator: Lebih Interaktif */}
           <div className="flex justify-center items-center space-x-3 mt-8">
-            {stories.map((_, i) => (
+            {stories.map((_, index) => (
               <button
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`transition-all duration-300 rounded-full ${
-                  currentSlide === i
-                    ? "w-10 h-3 bg-gradient-to-r from-amber-500 to-yellow-400"
-                    : "w-3 h-3 bg-amber-200 hover:bg-amber-300"
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`transition-all duration-300 rounded-full border border-amber-300 shadow-md ${
+                  currentSlide === index
+                    ? 'w-10 h-3 bg-amber-700 dot-active-pulse' // Efek pulse pada dot aktif
+                    : 'w-3 h-3 bg-amber-300 hover:bg-amber-500' 
                 }`}
               />
             ))}
           </div>
 
-          {/* Progress */}
-          <div className="mt-4 max-w-md mx-auto">
-            <div className="h-1 bg-amber-100 rounded-full overflow-hidden">
+          {/* Progress Bar: Lebih Tebal */}
+          <div className="mt-6 max-w-sm mx-auto">
+            <div className="h-2 bg-amber-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-500"
-                style={{
-                  width: `${((currentSlide + 1) / stories.length) * 100}%`,
-                }}
+                className="h-full bg-gradient-to-r from-amber-600 to-amber-800 transition-all duration-700"
+                style={{ width: `${((currentSlide + 1) / stories.length) * 100}%` }}
               />
             </div>
           </div>
 
-          {/* Hint */}
-          <div className="text-center mt-6 text-sm text-amber-700/70 italic">
-            <p className="animate-pulse">← Geser untuk melihat kisah selanjutnya →</p>
+          {/* Swipe Hint */}
+          <div className="text-center mt-6 text-sm text-amber-800/90 tracking-wider">
+            <p className="animate-pulse-slow">← Swipe or drag to explore →</p>
           </div>
         </div>
       </div>
+      
+      {/* CSS Khusus untuk Font dan Animasi */}
+      <style>
+        {`
+          .font-playfair { font-family: 'Playfair Display', serif; }
+          .font-script { font-family: 'Great Vibes', cursive; }
+
+          /* Animasi Pulse Lambat untuk Swipe Hint */
+          @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+          .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          }
+
+          /* Animasi Pulse Cepat untuk Dot Aktif */
+          @keyframes dot-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+          }
+          .dot-active-pulse {
+            animation: dot-pulse 1.5s ease-in-out infinite;
+          }
+        `}
+      </style>
     </div>
   );
 }

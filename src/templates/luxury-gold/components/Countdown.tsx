@@ -7,6 +7,7 @@ interface CountdownProps {
 }
 
 export default function Countdown({ config }: CountdownProps) {
+  // Mengambil tanggal dan waktu dari config
   const weddingDate = new Date(`${config.wedding.date}T${config.wedding.time}`).getTime();
 
   const [timeLeft, setTimeLeft] = useState({
@@ -16,15 +17,23 @@ export default function Countdown({ config }: CountdownProps) {
     Detik: 0,
   });
 
+  // Logic Hitung Mundur
   useEffect(() => {
     const update = () => {
       const now = new Date().getTime();
       const diff = weddingDate - now;
+
+      // Jika waktu sudah lewat, tetapkan ke 0
+      if (diff <= 0) {
+        setTimeLeft({ Hari: 0, Jam: 0, Menit: 0, Detik: 0 });
+        return;
+      }
+
       setTimeLeft({
-        Hari: Math.max(Math.floor(diff / (1000 * 60 * 60 * 24)), 0),
-        Jam: Math.max(Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)), 0),
-        Menit: Math.max(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)), 0),
-        Detik: Math.max(Math.floor((diff % (1000 * 60)) / 1000), 0),
+        Hari: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        Jam: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        Menit: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        Detik: Math.floor((diff % (1000 * 60)) / 1000),
       });
     };
     update();
@@ -33,31 +42,85 @@ export default function Countdown({ config }: CountdownProps) {
   }, [weddingDate]);
 
   return (
-    <div className="py-20 bg-gradient-to-b from-[#fffaf3] to-[#fef7e8]">
-      <div className="container mx-auto px-4 text-center">
-        <Clock size={48} className="mx-auto mb-4 text-amber-600" />
-        <h2 className="text-3xl md:text-4xl font-serif text-amber-800 mb-12 tracking-wide">
-          Menghitung Mundur Menuju Selamanya
+    <div className="relative py-20 overflow-hidden"> 
+      
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-fixed" // bg-fixed untuk parallax sederhana
+        style={{ backgroundImage: `url(${config.hero.backgroundImage})` }}
+      />
+      
+      {/* Overlay: Gelap/Krem Transparan untuk Kontras Teks */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#fefbf5]/90 via-[#f9f4ec]/85 to-[#f7f0e7]/90 backdrop-blur-[1px]" />
+
+      <div className="relative z-10 container mx-auto px-4 text-center">
+        
+        {/* Ikon dan Judul */}
+        <Clock size={48} className="mx-auto mb-4 text-amber-700/90 drop-shadow-md" />
+        <h2 className="text-3xl md:text-4xl font-serif text-amber-900 mb-12 tracking-wide font-medium drop-shadow-sm">
+          Menghitung Mundur Menuju Hari Bahagia
         </h2>
 
-        <div className="flex flex-wrap justify-center gap-4 max-w-3xl mx-auto">
+        {/* Kotak Hitung Mundur */}
+        <div className="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
           {Object.entries(timeLeft).map(([unit, value], index) => (
             <div
               key={unit}
-              className="relative bg-white/20 backdrop-blur-md border border-amber-400/40 rounded-2xl p-6 md:p-8 w-24 md:w-28 text-amber-800 shadow-[0_0_20px_rgba(255,215,100,0.2)] hover:shadow-[0_0_30px_rgba(255,215,100,0.3)] transition-all duration-500 hover:scale-105"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="
+                relative 
+                bg-white/80 
+                border-2 border-amber-500/50 
+                rounded-xl 
+                p-6 md:p-8 
+                w-24 md:w-32 
+                text-amber-900 
+                shadow-xl shadow-amber-900/10 
+                transition-all duration-300 
+                hover:shadow-2xl hover:scale-[1.03]
+                animate-fade-in-up
+              "
+              style={{ animationDelay: `${index * 0.15}s` }}
             >
-              <div className="text-4xl md:text-5xl font-bold mb-2 animate-pulse-gold">
+              {/* Nilai Waktu */}
+              <div className="text-4xl md:text-6xl font-playfair font-extrabold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-800 drop-shadow-md">
                 {value.toString().padStart(2, '0')}
               </div>
-              <div className="text-xs md:text-sm uppercase tracking-wider font-medium">
+              
+              {/* Unit Waktu */}
+              <div className="text-sm md:text-base uppercase tracking-widest font-medium text-gray-700/90">
                 {unit}
               </div>
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/40 to-transparent opacity-60 rounded-2xl pointer-events-none" />
+              
+              {/* Dekorasi Sudut (Filigree Sederhana) */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-amber-500/80 rounded-tl-lg" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-amber-500/80 rounded-br-lg" />
             </div>
           ))}
         </div>
       </div>
+      
+      {/* CSS Khusus untuk Animasi dan Font */}
+      <style>
+        {`
+          .font-playfair { font-family: 'Playfair Display', serif; }
+          
+          @keyframes fadeInUp {
+            0% {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0; /* Pastikan mulai dari tak terlihat */
+          }
+        `}
+      </style>
     </div>
   );
 }
