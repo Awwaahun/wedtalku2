@@ -1,155 +1,259 @@
-import { Heart, Instagram, Mail } from 'lucide-react';
+import React, { useState } from 'react';
+import { SilverHeart, SilverRing, SilverDiamond } from './icons';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../hooks/useWeddingConfig';
+import '../index.css';
 
 interface CoupleProps {
-  config: WeddingConfig;
+  config: any;
 }
 
-export default function Couple({ config }: CoupleProps) {
-  const { bride, groom } = config.couple;
+const Couple: React.FC<CoupleProps> = ({ config }) => {
+  const [selectedPerson, setSelectedPerson] = useState<'groom' | 'bride' | null>(null);
+  const { ref: groomRef, isVisible: groomVisible } = useScrollAnimation();
+  const { ref: brideRef, isVisible: brideVisible } = useScrollAnimation();
+  const { ref: dividerRef, isVisible: dividerVisible } = useScrollAnimation();
 
-  // Komponen Kartu Pasangan yang Ditingkatkan
-  const CoupleCard = ({ person, reverse }: { person: typeof bride; reverse?: boolean }) => {
-    // Asumsi hook useScrollAnimation sudah didefinisikan
-    const { elementRef, isVisible } = useScrollAnimation(); 
-
-    // Tentukan kelas animasi masuk:
-    // Jika reverse (Groom), masuk dari KIRI (translate-x negatif)
-    // Jika tidak reverse (Bride), masuk dari KANAN (translate-x positif)
-    const startAnimationClass = reverse 
-        ? 'opacity-0 -translate-x-24' // Groom (reverse=true) starts left
-        : 'opacity-0 translate-x-24';  // Bride (reverse=false) starts right
-        
-    const endAnimationClass = 'opacity-100 translate-x-0';
-
-
-    return (
-      <div
-        ref={elementRef}
-        // Menggunakan logika animasi horizontal baru
-        className={`flex flex-col ${
-          reverse ? 'md:flex-row-reverse' : 'md:flex-row'
-        } gap-8 md:gap-12 items-center transition-all duration-1000 ${
-          isVisible ? endAnimationClass : startAnimationClass
-        }`}
-      >
-        {/* Kolom Gambar */}
-        <div className="md:w-5/12 relative flex justify-center">
-          {/* Bingkai Ornamen Gambar (Ganti blur dengan border yang elegan) */}
-          <div className="absolute inset-0 top-4 left-4 right-4 bottom-4 rounded-3xl border-4 border-amber-300/60 opacity-60 transition-transform duration-700 group-hover:scale-[1.03] group-hover:opacity-80 hidden md:block" />
-          
-          <img
-            src={person.image}
-            alt={person.name}
-            // Gaya Gambar: Rounded yang lebih halus, shadow yang lebih dalam
-            className="relative rounded-3xl w-full h-96 object-cover shadow-2xl shadow-black/20 border-4 border-white/50 transition-transform hover:scale-[1.02] duration-700 max-w-sm md:max-w-full"
-          />
-        </div>
-
-        {/* Kolom Deskripsi */}
-        <div 
-          className="md:w-7/12 text-center md:text-left bg-white/90 p-8 sm:p-10 rounded-2xl 
-            border border-amber-500/30 
-            shadow-[0_10px_30px_rgba(180,120,40,0.1)] 
-            transition-all duration-500 hover:shadow-[0_15px_40px_rgba(180,120,40,0.2)]"
-        >
-          
-          <p className="text-sm uppercase tracking-widest font-medium text-slate-600 mb-2">{person.role}</p>
-          
-          {/* Nama: Lebih Besar, Emas Gradien */}
-          <h3 className="text-5xl md:text-6xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-600 to-slate-800 mb-2 drop-shadow-sm">
-            {person.name}
-          </h3>
-          
-          <p className="text-xl text-gray-700 mb-4 font-script italic">{person.fullName}</p> 
-
-          {/* Garis Dekoratif Tengah */}
-          <div className={`flex items-center space-x-3 mb-6 ${reverse ? 'md:justify-end' : 'md:justify-start'} justify-center`}>
-            <div className="h-px w-10 bg-slate-400" />
-            <Heart className="text-slate-500" size={18} fill="currentColor" />
-            <div className="h-px w-10 bg-slate-400" />
-          </div>
-
-          <p className="text-gray-700 leading-relaxed mb-4 text-base italic">{person.bio}</p>
-          <p className="text-gray-500 italic mb-6 text-sm">{person.parents}</p>
-
-          {/* Social Media Link: Lebih Rapi */}
-          <div className={`flex items-center space-x-6 pt-4 border-t border-slate-200 ${reverse ? 'md:justify-end' : 'md:justify-start'} justify-center`}>
-            {person.instagram && (
-              <a
-                href={`https://instagram.com/${person.instagram.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-slate-600 hover:text-amber-900 transition-colors group"
-              >
-                <Instagram size={20} className="group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">{person.instagram}</span>
-              </a>
-            )}
-            {person.email && (
-              <a
-                href={`mailto:${person.email}`}
-                className="flex items-center space-x-2 text-slate-600 hover:text-amber-900 transition-colors group"
-              >
-                <Mail size={20} className="group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">Kirim Pesan</span>
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  const groomData = {
+    name: config?.couple?.groom?.name || 'Alexander William',
+    title: 'The Groom',
+    parents: config?.couple?.groom?.parents || { father: 'Robert William', mother: 'Elizabeth William' },
+    bio: config?.couple?.groom?.bio || 'A kind-hearted soul with a passion for adventure and bringing joy to everyone around him.',
+    education: config?.couple?.groom?.education || 'Master of Business Administration',
+    occupation: config?.couple?.groom?.occupation || 'Software Engineer',
+    image: config?.couple?.groom?.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face'
   };
 
-  return (
-    // Latar Belakang: Gradien Krem yang Lebih Lembut
-    <div className="py-20 silver-section bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
-      <div className="container mx-auto px-4">
-        
-        {/* Judul Bagian */}
-        <div className="text-center mb-16">
-          <p className="text-lg text-slate-500 font-script italic mb-1">Our Journey Begins</p>
-          <h2 className="text-4xl md:text-5xl font-heading font-extrabold text-slate-700 mb-4">
-            Perkenalkan Kami
-          </h2>
-          <p className="text-gray-600 text-sm tracking-wider uppercase">Dua Jiwa, Satu Hati, Satu Tujuan</p>
+  const brideData = {
+    name: config?.couple?.bride?.name || 'Isabella Rose',
+    title: 'The Bride',
+    parents: config?.couple?.bride?.parents || { father: 'Michael Rose', mother: 'Sarah Rose' },
+    bio: config?.couple?.bride?.bio || 'A graceful and compassionate soul who fills every room with warmth and laughter.',
+    education: config?.couple?.bride?.education || 'Master of Fine Arts',
+    occupation: config?.couple?.bride?.occupation || 'Creative Director',
+    image: config?.couple?.bride?.image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=500&fit=crop&crop=face'
+  };
+
+  const PersonCard = ({ 
+    person, 
+    isVisible, 
+    side 
+  }: { 
+    person: typeof groomData; 
+    isVisible: boolean; 
+    side: 'left' | 'right' 
+  }) => (
+    <div 
+      className={`transform transition-all duration-1000 ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : `${side === 'left' ? 'opacity-0 -translate-x-20' : 'opacity-0 translate-x-20'}`
+      }`}
+    >
+      <div className="card-silver max-w-md mx-auto group">
+        {/* Image Container */}
+        <div className="relative mb-6 overflow-hidden rounded-lg">
+          <div className="aspect-[3/4] bg-gradient-to-br from-gray-200 to-gray-300">
+            <img 
+              src={person.image} 
+              alt={person.name}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          {/* Decorative Frame */}
+          <div className="absolute inset-0 border-4 border-white/30 pointer-events-none" />
+          <div className="absolute -inset-2 border-2 border-primary-silver/20 rounded-lg pointer-events-none" />
         </div>
 
-        <div className="max-w-6xl mx-auto space-y-24">
-          
-          {/* Bride Card (reverse=false) - Masuk dari KANAN */}
-          <CoupleCard person={bride} />
+        {/* Name and Title */}
+        <div className="text-center mb-4">
+          <h3 className="font-heading text-2xl md:text-3xl text-charcoal mb-2">
+            {person.name}
+          </h3>
+          <p className="font-elegant text-lg text-silver italic mb-3">
+            {person.title}
+          </p>
+          <div className="flex justify-center mb-4">
+            <SilverRing size={24} className="text-primary-silver" />
+          </div>
+        </div>
 
-          {/* Divider Jantung yang Lebih Berkelas */}
-          <div className="flex justify-center">
-            <div className="relative bg-slate-100 border border-slate-300 rounded-full p-4 shadow-xl shadow-slate-400/20 transition-transform duration-500 hover:scale-110">
-              <Heart className="text-slate-600" size={36} fill="currentColor" />
-              <div className="absolute inset-0 rounded-full border-4 border-double border-slate-400/40 animate-ping-slow pointer-events-none" />
+        {/* Parents */}
+        <div className="bg-platinum/50 rounded-lg p-4 mb-4">
+          <p className="font-body text-sm text-silver mb-2 text-center">Son of</p>
+          <p className="font-elegant text-base text-charcoal text-center">
+            {person.parents.father} & {person.parents.mother}
+          </p>
+        </div>
+
+        {/* Bio */}
+        <p className="font-body text-sm text-secondary leading-relaxed mb-4 text-center">
+          {person.bio}
+        </p>
+
+        {/* Details */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-center space-x-2">
+            <SilverDiamond size={16} className="text-primary-silver opacity-60" />
+            <span className="font-body text-sm text-silver">{person.education}</span>
+          </div>
+          <div className="flex items-center justify-center space-x-2">
+            <SilverDiamond size={16} className="text-primary-silver opacity-60" />
+            <span className="font-body text-sm text-silver">{person.occupation}</span>
+          </div>
+        </div>
+
+        {/* Interactive Button */}
+        <button
+          onClick={() => setSelectedPerson(side === 'left' ? 'groom' : 'bride')}
+          className="w-full mt-4 btn-silver text-sm font-medium group-hover:shadow-medium"
+        >
+          Learn More
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <section id="couple" className="py-16 md:py-20 bg-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-3">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C0C0C0' fill-opacity='0.3'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Section Header */}
+        <div ref={dividerRef} className={`text-center mb-16 transition-all duration-700 ${dividerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <SilverHeart size={56} className="text-primary-silver drop-shadow-lg" />
+              <div className="absolute inset-0 bg-primary-silver/20 rounded-full blur-xl scale-150" />
             </div>
           </div>
+          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl text-charcoal mb-4">
+            Happy Couple
+          </h2>
+          <p className="font-body text-lg text-silver max-w-2xl mx-auto">
+            Two hearts, one love, forever bound together in matrimony
+          </p>
+        </div>
 
-          {/* Groom Card (reverse=true) - Masuk dari KIRI */}
-          <CoupleCard person={groom} reverse />
+        {/* Couple Cards */}
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center mb-12">
+          <div ref={groomRef}>
+            <PersonCard person={groomData} isVisible={groomVisible} side="left" />
+          </div>
+          
+          {/* Center Divider */}
+          <div ref={dividerRef} className={`hidden md:flex flex-col items-center space-y-4 transition-all duration-1000 delay-300 ${dividerVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}>
+            <div className="h-16 w-px bg-gradient-to-b from-transparent via-primary-silver to-transparent" />
+            <SilverHeart size={32} className="text-primary-silver drop-shadow-lg animate-pulse" />
+            <div className="h-16 w-px bg-gradient-to-b from-transparent via-primary-silver to-transparent" />
+          </div>
+
+          <div ref={brideRef}>
+            <PersonCard person={brideData} isVisible={brideVisible} side="right" />
+          </div>
+        </div>
+
+        {/* Mobile Divider */}
+        <div className={`md:hidden flex justify-center items-center space-x-4 my-8 ${dividerVisible ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="h-px bg-gradient-to-r from-transparent via-primary-silver to-transparent w-20" />
+          <SilverHeart size={24} className="text-primary-silver" />
+          <div className="h-px bg-gradient-to-r from-transparent via-primary-silver to-transparent w-20" />
+        </div>
+
+        {/* Love Quote */}
+        <div className={`text-center mt-12 transition-all duration-1000 delay-500 ${dividerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="card-silver max-w-3xl mx-auto p-8 bg-gradient-to-br from-platinum/30 to-white">
+            <div className="flex justify-center mb-4">
+              <div className="flex space-x-2">
+                {[...Array(3)].map((_, i) => (
+                  <SilverHeart 
+                    key={i} 
+                    size={20} 
+                    className="text-primary-silver" 
+                    style={{ animationDelay: `${i * 0.2}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="font-script text-2xl md:text-3xl text-charcoal italic mb-4">
+              "From the first hello to forever, every moment with you is a blessing"
+            </p>
+            <p className="font-elegant text-silver">— {groomData.name} & {brideData.name}</p>
+          </div>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute top-20 left-10 opacity-20 hidden lg:block">
+          <SilverRing size={40} className="text-primary-silver animate-pulse" />
+        </div>
+        <div className="absolute top-40 right-20 opacity-20 hidden lg:block">
+          <SilverDiamond size={30} className="text-primary-silver animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="absolute bottom-20 left-20 opacity-20 hidden lg:block">
+          <SilverDiamond size={35} className="text-primary-silver animate-pulse" style={{ animationDelay: '2s' }} />
+        </div>
+        <div className="absolute bottom-40 right-10 opacity-20 hidden lg:block">
+          <SilverRing size={25} className="text-primary-silver animate-pulse" style={{ animationDelay: '1.5s' }} />
         </div>
       </div>
 
-      <style>
-        {`
-          /* Custom Font Fallback/Class */
-          .font-playfair { font-family: 'Playfair Display', serif; }
-          .font-script { font-family: 'Great Vibes', cursive; }
+      {/* Detail Modal */}
+      {selectedPerson && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedPerson(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedPerson(null)}
+              className="absolute top-4 right-4 text-silver hover:text-charcoal transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+            
+            <div className="text-center">
+              <h3 className="font-heading text-3xl text-charcoal mb-4">
+                {selectedPerson === 'groom' ? groomData.name : brideData.name}
+              </h3>
+              <p className="font-script text-xl text-silver mb-6">
+                {selectedPerson === 'groom' ? groomData.title : brideData.title}
+              </p>
+              <div className="aspect-video mb-6 rounded-lg overflow-hidden">
+                <img 
+                  src={selectedPerson === 'groom' ? groomData.image : brideData.image}
+                  alt={selectedPerson === 'groom' ? groomData.name : brideData.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="font-body text-secondary leading-relaxed mb-6">
+                {selectedPerson === 'groom' ? groomData.bio : brideData.bio}
+              </p>
+              <button
+                onClick={() => setSelectedPerson(null)}
+                className="btn-silver px-6 py-3"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-          /* Animasi Ping Lambat */
-          @keyframes ping-slow {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.5); opacity: 0; }
-          }
-          .animate-ping-slow {
-            animation: ping-slow 4s cubic-bezier(0, 0, 0.2, 1) infinite;
-          }
-        `}
-      </style>
-    </div>
+      {/* Section Divider */}
+      <div className="section-divider mt-16" />
+    </section>
   );
-}
+};
+
+export default Couple;

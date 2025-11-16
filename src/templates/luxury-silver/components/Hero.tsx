@@ -1,163 +1,186 @@
-import React, { useState, useRef } from 'react';
-import { Heart, ChevronDown, BookOpenText } from 'lucide-react';
-import type { WeddingConfig } from '../hooks/useWeddingConfig';
+import React, { useState, useEffect } from 'react';
+import { SilverHeart, SilverDiamond, SilverRing } from './icons';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import '../index.css';
 
 interface HeroProps {
-  onAdminAccess?: () => void;
-  config: WeddingConfig;
+  onAdminAccess: () => void;
+  config: any;
 }
 
 const Hero: React.FC<HeroProps> = ({ onAdminAccess, config }) => {
-  const [clickCount, setClickCount] = useState(0);
-  const clickTimeoutRef = useRef<number | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { ref, isVisible } = useScrollAnimation();
 
-  const handleBookClick = () => {
-    const newClickCount = clickCount + 1;
-    setClickCount(newClickCount);
+  const heroImages = [
+    'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=800&h=600&fit=crop'
+  ];
 
-    if (clickTimeoutRef.current) {
-      window.clearTimeout(clickTimeoutRef.current);
-    }
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
+    }, 5000);
 
-    if (newClickCount === 3) {
-      setClickCount(0);
-      onAdminAccess?.();
-    } else {
-      clickTimeoutRef.current = window.setTimeout(() => {
-        setClickCount(0);
-      }, 1000);
-    }
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    element?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const { groom, bride } = config.couple;
-
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden luxury-silver-theme">
-      {/* Background: Warna Dasar Gelap untuk Kontras Mewah */}
-
-      {/* Background Image dan Parallax (Parallax Sederhana Saat Scroll) */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-fixed transition-transform duration-[6000ms] scale-105"
-        style={{ backgroundImage: `url(${config.hero.backgroundImage})` }}
-      />
-      
-      {/* Overlay Ganda: Memberi Kedalaman dan Fokus pada Tengah */}
-      {/* 1. Lapisan Gelap Tipis (Efek Matte) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-100/80 via-slate-200/60 to-slate-300/80 backdrop-filter backdrop-blur-[2px]" />
-      {/* 2. Gradien Radial Tengah (Fokus pada Konten) */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(148,163,184,0.2)_0%,rgba(30,41,59,0.8)_75%)]" />
-
-      {/* Secret Admin Access Button */}
-      <button 
-        onClick={handleBookClick}
-        className="absolute bottom-4 left-4 p-2 z-50 text-amber-500/40 hover:text-amber-300/70 transition-colors"
-        aria-label="Admin Access Toggle"
-      >
-        <BookOpenText size={24} />
-      </button>
-
-      {/* Content Tengah */}
-      <div className="relative z-10 text-center px-6 py-12 max-w-lg w-full">
-        
-        {/* Frame Konten Utama: Lebih Berani dan Berkelas */}
-        <div className="animate-fade-in bg-white/5 border border-amber-500/30 rounded-lg shadow-2xl shadow-black/70 p-10 sm:p-14 backdrop-blur-[5px] text-white/90 hero-frame">
-          
-          {/* Ornamen Atas (Garis Ornamen Khusus) */}
-          <div className="mb-8 relative">
-            <Heart size={36} className="mx-auto fill-amber-400/80 stroke-1 stroke-amber-200 mb-2 drop-shadow-lg" />
-            <div className="w-1/3 h-px bg-amber-600/70 mx-auto my-3" />
-          </div>
-
-          <p className="text-slate-600 font-light text-base mb-3 tracking-widest uppercase opacity-80">The Sacred Matrimony of</p>
-          
-          {/* Nama Pasangan: Warna Emas & Shadow Tajam */}
-          <h1 className="text-6xl sm:text-7xl md:text-8xl font-heading font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400 drop-shadow-lg leading-none">
-            {groom.name}
-          </h1>
-          
-          {/* Ikon Penghubung: Font Script Mewah */}
-          <p className="text-4xl sm:text-5xl text-slate-500 font-script my-4 tracking-wider font-medium">
-            &amp;
-          </p>
-          
-          <h1 className="text-6xl sm:text-7xl md:text-8xl font-heading font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400 drop-shadow-lg leading-none mb-8">
-            {bride.name}
-          </h1>
-          
-          <div className="w-2/3 h-px bg-amber-600/50 mx-auto my-8" />
-
-          {/* Tanggal & Tagline */}
-          <p className="text-2xl sm:text-3xl font-light text-amber-100 mb-4 tracking-widest">
-            {config.wedding.dateDisplay}
-          </p>
-
-          <p className="text-amber-200/80 mt-4 text-base italic font-light tracking-wide">
-            "{config.hero.tagline}"
-          </p>
-          
+    <section 
+      ref={ref}
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100"
+    >
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0 z-0">
+        <div className="relative w-full h-full">
+          {heroImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ${index === currentImageIndex ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <img 
+                src={image} 
+                alt={`Wedding background ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/40" />
+            </div>
+          ))}
         </div>
-
-        {/* Scroll Down Indicator */}
-        <div className="mt-16 animate-slow-bounce">
-          <ChevronDown size={50} className="text-amber-400 mx-auto opacity-80 hover:opacity-100 transition-opacity drop-shadow-md" />
-          <p className="text-base text-amber-300/80 mt-2 tracking-widest">Open Invitation</p>
+        
+        {/* Floating Silver Particles */}
+        <div className="absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="floating-silver"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 4}s`,
+                animationDuration: `${3 + Math.random() * 2}s`
+              }}
+            />
+          ))}
         </div>
       </div>
 
-      <style>
-        {`
-          /* Custom Font Fallback/Class */
-          .font-playfair { font-family: 'Playfair Display', serif; }
-          .font-script { font-family: 'Great Vibes', cursive; }
-          
-          /* Keyframes for slow bounce */
-          @keyframes slow-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-          }
-          
-          .animate-slow-bounce {
-            animation: slow-bounce 3s infinite ease-in-out;
-          }
+      {/* Main Content */}
+      <div className={`relative z-10 text-center px-4 max-w-4xl mx-auto transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        {/* Silver Ornament Top */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative">
+            <SilverDiamond size={60} className="text-white drop-shadow-lg" />
+            <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl" />
+          </div>
+        </div>
 
-          /* Animasi Fade In */
-          @keyframes fade-in {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fade-in {
-            animation: fade-in 1.5s ease-out 0.5s forwards;
-            opacity: 0; /* Mulai dari tidak terlihat */
-          }
+        {/* Couple Names */}
+        <div className="mb-6">
+          <h1 className="font-script text-6xl md:text-7xl lg:text-8xl text-white mb-4 drop-shadow-2xl leading-none">
+            {config?.couple?.groom?.name || 'Alexander'}
+          </h1>
+          <div className="flex justify-center items-center my-6">
+            <div className="h-px bg-gradient-to-r from-transparent via-white to-transparent w-32" />
+            <SilverHeart size={32} className="mx-6 text-white drop-shadow-lg" />
+            <div className="h-px bg-gradient-to-r from-transparent via-white to-transparent w-32" />
+          </div>
+          <h1 className="font-script text-6xl md:text-7xl lg:text-8xl text-white mb-4 drop-shadow-2xl leading-none">
+            {config?.couple?.bride?.name || 'Isabella'}
+          </h1>
+        </div>
 
-          /* Filigree (Ornamen Sudut) dengan Pseudo-element */
-          .hero-frame::before, .hero-frame::after {
-            content: '';
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 2px solid #D9A844; /* Warna Emas */
-            opacity: 0.8;
-          }
-          .hero-frame::before {
-            top: -10px;
-            left: -10px;
-            border-right: none;
-            border-bottom: none;
-            border-radius: 5px 0 0 0;
-            transform: rotate(45deg); /* Memberi sedikit sentuhan ornamen */
-          }
-          .hero-frame::after {
-            bottom: -10px;
-            right: -10px;
-            border-left: none;
-            border-top: none;
-            border-radius: 0 0 5px 0;
-            transform: rotate(45deg);
-          }
-        `}
-      </style>
-    </div>
+        {/* Wedding Date */}
+        <div className="mb-8">
+          <p className="font-elegant text-xl md:text-2xl text-white/90 drop-shadow-lg mb-2">
+            {config?.date?.full || 'Saturday, December 15, 2025'}
+          </p>
+          <div className="flex justify-center items-center space-x-4 text-white/80">
+            <span className="font-body">{config?.date?.day || '15'}</span>
+            <span className="text-2xl">•</span>
+            <span className="font-body">{config?.date?.month || 'December'}</span>
+            <span className="text-2xl">•</span>
+            <span className="font-body">{config?.date?.year || '2025'}</span>
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <p className="font-body text-lg text-white/85 mb-12 italic drop-shadow-lg max-w-2xl mx-auto">
+          "Two souls, one journey, forever bound in love and silver memories"
+        </p>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+          <button
+            onClick={() => scrollToSection('couple')}
+            className="btn-silver px-8 py-4 text-lg font-medium shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300"
+          >
+            Our Story
+          </button>
+          <button
+            onClick={() => scrollToSection('event')}
+            className="btn-silver px-8 py-4 text-lg font-medium shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300"
+          >
+            Event Details
+          </button>
+        </div>
+
+        {/* Silver Rings Decoration */}
+        <div className="flex justify-center space-x-8 mb-8">
+          <SilverRing size={40} className="text-white/80 drop-shadow-lg animate-pulse" />
+          <SilverRing size={40} className="text-white/80 drop-shadow-lg animate-pulse" style={{ animationDelay: '0.5s' }} />
+        </div>
+      </div>
+
+      {/* Scroll Indicator */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/70 animate-bounce">
+        <div className="flex flex-col items-center">
+          <span className="text-sm font-body mb-2">Scroll Down</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg">
+            <path d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Admin Access Button (Hidden by default) */}
+      <button
+        onClick={onAdminAccess}
+        className="fixed bottom-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 hover:opacity-100 transition-all duration-300 z-20"
+        aria-label="Admin Access"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/>
+        </svg>
+      </button>
+
+      {/* Decorative Corners */}
+      <div className="absolute top-4 left-4 opacity-30">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <path d="M0 0L0 20L20 0M80 0L60 0L80 20M80 80L80 60L60 80M0 80L20 80L0 60" stroke="url(#silverGradient)" strokeWidth="2"/>
+        </svg>
+      </div>
+      <div className="absolute top-4 right-4 opacity-30">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <path d="M80 0L80 20L60 0M0 0L20 0L0 20M0 80L0 60L20 80M80 80L60 80L80 60" stroke="url(#silverGradient)" strokeWidth="2"/>
+        </svg>
+      </div>
+      <div className="absolute bottom-4 left-4 opacity-30">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <path d="M0 80L0 60L20 80M80 80L60 80L80 60M80 0L80 20L60 0M0 0L20 0L0 20" stroke="url(#silverGradient)" strokeWidth="2"/>
+        </svg>
+      </div>
+      <div className="absolute bottom-4 right-4 opacity-30">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <path d="M80 80L80 60L60 80M0 80L20 80L0 60M0 0L0 20L20 0M80 0L60 0L80 20" stroke="url(#silverGradient)" strokeWidth="2"/>
+        </svg>
+      </div>
+    </section>
   );
 };
 

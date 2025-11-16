@@ -1,130 +1,155 @@
-import React, { useEffect, useState } from "react";
-import { Heart } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-
-const phrases = [
-  "The Wedding Celebration",
-  "Our Special Day",
-  "Forever Begins Here",
-  "Two Hearts, One Journey",
-];
+import React, { useEffect, useState } from 'react';
+import { SilverHeart, SilverDiamond, SilverRing } from './icons';
+import '../index.css';
 
 const LoadingScreen: React.FC = () => {
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [showText, setShowText] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingText, setLoadingText] = useState('Initializing...');
 
-  // Berganti teks tiap beberapa detik
   useEffect(() => {
-    setShowText(true);
-    const interval = setInterval(() => {
-      setPhraseIndex((prev) => (prev + 1) % phrases.length);
-    }, 3000);
-    return () => clearInterval(interval);
+    const loadingTexts = [
+      'Preparing your invitation...',
+      'Loading beautiful memories...',
+      'Setting the mood...',
+      'Almost ready...',
+      'Welcome to our special day!'
+    ];
+
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        const newProgress = prev + Math.random() * 20;
+        if (newProgress >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return newProgress;
+      });
+    }, 300);
+
+    const textInterval = setInterval(() => {
+      setLoadingText(prev => {
+        const currentIndex = loadingTexts.indexOf(prev);
+        const nextIndex = (currentIndex + 1) % loadingTexts.length;
+        return loadingTexts[nextIndex];
+      });
+    }, 800);
+
+    return () => {
+      clearInterval(progressInterval);
+      clearInterval(textInterval);
+    };
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden">
-      {/* Background image + overlay gradient */}
-      <div
-        className="absolute inset-0 bg-cover bg-center brightness-105"
-        style={{
-          backgroundImage:
-            "url('https://images.pexels.com/photos/3182749/pexels-photo-3182749.jpeg?auto=compress&cs=tinysrgb&w=1600')",
-        }}
-      ></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[#fff7f2]/80 via-[#fef2ef]/90 to-[#fdf6f3]/95 backdrop-blur-sm"></div>
-
-      {/* Floating petals / hearts */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(12)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{
-              y: "100vh",
-              x: Math.random() * window.innerWidth,
-              opacity: 0,
-              rotate: 0,
-            }}
-            animate={{
-              y: "-10vh",
-              rotate: 360,
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: 8 + Math.random() * 6,
-              repeat: Infinity,
-              delay: i * 0.6,
-              ease: "easeInOut",
-            }}
-            className="absolute text-rose-300/70"
-          >
-            <Heart
-              className="w-5 h-5"
-              fill="currentColor"
-              style={{ transformOrigin: "center" }}
-            />
-          </motion.div>
-        ))}
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-50 via-white to-platinum z-50 flex flex-col items-center justify-center">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C0C0C0' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
       </div>
 
-      {/* Central glowing heart */}
-      <motion.div
-        className="relative flex items-center justify-center"
-        initial={{ scale: 0 }}
-        animate={{ scale: [1, 1.1, 1], rotate: [0, 10, -10, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        <Heart className="text-rose-400 absolute h-32 w-32 opacity-30 animate-ping" />
-        <Heart
-          className="text-rose-500 relative h-24 w-24 drop-shadow-[0_0_20px_rgba(255,150,150,0.6)]"
-          fill="currentColor"
-        />
-      </motion.div>
+      {/* Main Content */}
+      <div className="relative z-10 text-center px-4 max-w-md w-full">
+        {/* Animated Logo */}
+        <div className="mb-8 relative">
+          <div className="flex justify-center items-center space-x-4">
+            <SilverRing size={48} className="text-primary-silver animate-pulse" />
+            <div className="relative">
+              <SilverHeart size={64} className="text-primary-silver drop-shadow-lg animate-pulse" />
+              <div className="absolute inset-0 bg-primary-silver/20 rounded-full blur-xl scale-150 animate-pulse" />
+            </div>
+            <SilverRing size={48} className="text-primary-silver animate-pulse" style={{ animationDelay: '0.5s' }} />
+          </div>
+          
+          {/* Floating Diamonds */}
+          <div className="absolute -top-4 -left-4 animate-float">
+            <SilverDiamond size={20} className="text-primary-silver/60" />
+          </div>
+          <div className="absolute -top-2 -right-6 animate-float" style={{ animationDelay: '1s' }}>
+            <SilverDiamond size={16} className="text-primary-silver/40" />
+          </div>
+          <div className="absolute -bottom-4 left-2 animate-float" style={{ animationDelay: '1.5s' }}>
+            <SilverDiamond size={18} className="text-primary-silver/50" />
+          </div>
+        </div>
 
-      {/* Animated Text */}
-      <AnimatePresence mode="wait">
-        {showText && (
-          <motion.div
-            key={phraseIndex}
-            className="mt-8 flex flex-col items-center text-center"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -30 }}
-            transition={{ duration: 1 }}
-          >
-            <motion.p
-              className="text-2xl md:text-3xl font-serif text-gray-700 tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-400 to-rose-600 animate-[shimmer_3s_infinite]"
-              style={{ backgroundSize: "200% auto" }}
-            >
-              {phrases[phraseIndex]}
-            </motion.p>
+        {/* Loading Text */}
+        <h1 className="font-script text-3xl md:text-4xl text-charcoal mb-2 animate-fade-in">
+          {loadingText}
+        </h1>
+        
+        {/* Couple Names */}
+        <p className="font-elegant text-lg text-silver mb-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          Alexander & Isabella
+        </p>
 
-            <motion.p
-              className="mt-5 text-lg font-serif text-gray-600 italic"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{
-                delay: 0.5,
-                duration: 1.5,
-                repeat: Infinity,
-                repeatType: "reverse",
-              }}
-            >
-              “Loading our beautiful story...”
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Progress Bar */}
+        <div className="w-full max-w-xs mx-auto mb-6">
+          <div className="bg-white/50 backdrop-blur-sm rounded-full h-3 overflow-hidden border border-silver-light">
+            <div 
+              className="h-full bg-gradient-to-r from-primary-silver to-light-silver rounded-full transition-all duration-500 ease-out shimmer-silver"
+              style={{ width: `${loadingProgress}%` }}
+            />
+          </div>
+          <p className="font-body text-sm text-silver mt-2">
+            {Math.round(loadingProgress)}%
+          </p>
+        </div>
 
-      {/* shimmer keyframe */}
-      <style>
-        {`
-          @keyframes shimmer {
-            0% { background-position: 200% center; }
-            100% { background-position: -200% center; }
+        {/* Loading Dots */}
+        <div className="flex justify-center space-x-2">
+          {[0, 1, 2].map((index) => (
+            <div
+              key={index}
+              className="w-2 h-2 bg-primary-silver rounded-full animate-bounce"
+              style={{ animationDelay: `${index * 0.2}s` }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Decoration */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+        <div className="flex items-center space-x-2 text-silver/60">
+          <SilverDiamond size={16} />
+          <span className="font-elegant text-sm">Preparing something special</span>
+          <SilverDiamond size={16} />
+        </div>
+      </div>
+
+      {/* Custom Animations */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 0.6;
           }
-        `}
-      </style>
+          50% {
+            transform: translateY(-10px) rotate(180deg);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 1s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

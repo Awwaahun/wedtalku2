@@ -1,95 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Heart,
-  Calendar,
-  Users,
-  Gift,
-  Wallet,
-  MessageCircle,
-  UserCircle,
-  Send,
-  Menu,
-  X,
-} from 'lucide-react';
+import { SilverHeart, SilverDiamond, SilverRing } from './icons';
+import '../index.css';
 
-// Pastikan props ini disediakan saat komponen dipanggil
 interface FloatingNavbarProps {
   activeSection: string;
   scrollToSection: (id: string) => void;
 }
 
-export default function FloatingNavbar({ activeSection, scrollToSection }: FloatingNavbarProps) {
-  const [scrolled, setScrolled] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ activeSection, scrollToSection }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      // Show navbar after scrolling past hero section
+      const heroSection = document.getElementById('hero');
+      if (heroSection) {
+        const heroBottom = heroSection.offsetTop + heroSection.offsetHeight;
+        setIsVisible(window.scrollY > heroBottom - 100);
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const navItems = [
-    { icon: Heart, label: 'Home', id: 'hero' },
-    { icon: UserCircle, label: 'Couple', id: 'couple' },
-    { icon: Users, label: 'Story', id: 'story' },
-    { icon: Calendar, label: 'Event', id: 'event' },
-    { icon: Gift, label: 'Gallery', id: 'gallery' },
-    { icon: Wallet, label: 'Gift', id: 'donation' },
-    { icon: MessageCircle, label: 'RSVP', id: 'rsvp' },
-    { icon: Send, label: 'Prayer', id: 'prayer' },
+    { id: 'hero', label: 'Home', icon: <SilverHeart size={16} /> },
+    { id: 'couple', label: 'Couple', icon: <SilverRing size={16} /> },
+    { id: 'story', label: 'Story', icon: <SilverHeart size={16} /> },
+    { id: 'event', label: 'Events', icon: <SilverDiamond size={16} /> },
+    { id: 'gallery', label: 'Gallery', icon: <SilverDiamond size={16} /> },
+    { id: 'rsvp', label: 'RSVP', icon: <SilverHeart size={16} /> }
   ];
-
-  const handleNavClick = (id: string) => {
-    scrollToSection(id);
-    setIsMenuOpen(false);
-  };
-
-  // Konstanta Warna Emas
-  const SILVER_GRADIENT = 'bg-gradient-to-r from-slate-600 to-slate-800';
-  const SILVER_HOVER_TEXT = 'text-slate-700';
-  const SILVER_ICON = 'text-slate-600';
 
   return (
     <>
-      {/* Desktop Floating Navigation */}
-      <nav
-        className={`hidden md:block fixed top-6 left-1/2 -translate-x-1/2 z-[60] transition-all duration-500 ${
-          scrolled ? 'scale-95' : 'scale-100'
+      {/* Desktop Floating Navbar */}
+      <nav 
+        className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-500 ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 -translate-y-4 pointer-events-none'
         }`}
       >
-        <div
-          className={`bg-white/95 backdrop-blur-md rounded-full shadow-2xl transition-all duration-300 border-2 border-slate-300/50 shadow-slate-400/10`}
+        <div 
+          className={`bg-white/95 backdrop-blur-md rounded-full shadow-2xl border border-silver-light px-2 py-2 transition-all duration-300 ${
+            isHovered ? 'scale-105 shadow-silver' : ''
+          }`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
-          <div className="flex items-center space-x-1 px-3 py-3">
-            {navItems.map((item, index) => (
+          <div className="flex items-center space-x-1">
+            {/* Center Logo/Brand */}
+            <div className="flex items-center justify-center px-3">
+              <div className="w-8 h-8 bg-silver-gradient rounded-full flex items-center justify-center">
+                <SilverHeart size={16} className="text-charcoal" />
+              </div>
+            </div>
+            
+            {/* Divider */}
+            <div className="h-6 w-px bg-silver-light" />
+            
+            {/* Navigation Items */}
+            {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`group relative flex flex-col items-center px-3 py-2 rounded-full transition-all duration-300 ${
+                className={`relative px-3 py-2 rounded-full transition-all duration-300 flex items-center space-x-2 group ${
                   activeSection === item.id
-                    // Active State: Emas Gradien
-                    ? `${SILVER_GRADIENT} text-white scale-110 shadow-lg shadow-slate-600/30`
-                    // Inactive State: Krem / Amber
-                    : `text-gray-600 hover:bg-[#FDF6E3] ${SILVER_HOVER_TEXT} hover:scale-105`
+                    ? 'bg-primary-silver/20 text-charcoal'
+                    : 'text-silver hover:text-charcoal hover:bg-platinum/30'
                 }`}
-                style={{ transitionDelay: `${index * 30}ms` }}
+                title={item.label}
               >
-                <item.icon
-                  size={20}
-                  className={`transition-transform duration-300 ${
-                    activeSection === item.id ? 'scale-110' : 'group-hover:scale-110'
-                  }`}
-                />
-                <span
-                  className={`font-medium mt-1 transition-opacity duration-300 text-xs ${
-                    activeSection === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  }`}
-                >
+                <span className={`transform transition-transform duration-200 group-hover:scale-110 ${
+                  activeSection === item.id ? 'scale-110' : ''
+                }`}>
+                  {item.icon}
+                </span>
+                <span className={`font-body text-xs font-medium transition-all duration-300 ${
+                  activeSection === item.id || isHovered ? 'opacity-100 max-w-20' : 'opacity-0 max-w-0 overflow-hidden'
+                }`}>
                   {item.label}
                 </span>
+                
+                {/* Active Indicator */}
                 {activeSection === item.id && (
-                  // Dot Indikator Emas
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-slate-400 rounded-full animate-pulse shadow-sm" />
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary-silver rounded-full" />
                 )}
               </button>
             ))}
@@ -97,94 +95,101 @@ export default function FloatingNavbar({ activeSection, scrollToSection }: Float
         </div>
       </nav>
 
-      {/* Mobile Floating Button (Menu Toggle) */}
+      {/* Mobile Floating Action Button */}
       <button
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-        className={`md:hidden fixed bottom-6 right-6 z-[70] w-12 h-12 rounded-full ${SILVER_GRADIENT} text-white shadow-2xl shadow-amber-900/40 transition-all duration-300 flex items-center justify-center ${
-          isMenuOpen ? 'rotate-90 scale-110' : 'rotate-0 scale-100'
-        } hover:scale-110 active:scale-95`}
+        onClick={() => {
+          // Open mobile menu or scroll to top
+          const mobileMenu = document.getElementById('mobile-menu');
+          if (mobileMenu) {
+            mobileMenu.classList.toggle('hidden');
+          } else {
+            scrollToSection('hero');
+          }
+        }}
+        className={`fixed bottom-6 right-6 z-40 bg-white/95 backdrop-blur-md rounded-full shadow-2xl border border-silver-light p-4 transition-all duration-500 lg:hidden ${
+          isVisible 
+            ? 'opacity-100 scale-100' 
+            : 'opacity-0 scale-0 pointer-events-none'
+        }`}
       >
-        {isMenuOpen ? <X size={26} /> : <Menu size={26} />}
+        <SilverHeart size={24} className="text-primary-silver" />
       </button>
 
-      {/* Mobile Overlay */}
-      <div
-        className={`md:hidden fixed inset-0 z-[65] transition-all duration-500 ${
-          isMenuOpen
-            ? 'bg-black/40 backdrop-blur-sm pointer-events-auto'
-            : 'bg-black/0 backdrop-blur-none pointer-events-none'
-        }`}
-        onClick={() => setIsMenuOpen(false)}
-      />
-
-      {/* Mobile Menu (Slide-out) */}
-      <div
-        className={`md:hidden fixed bottom-24 right-6 z-[65] transition-all duration-500 ${
-          isMenuOpen
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 translate-y-10 pointer-events-none'
-        }`}
+      {/* Mobile Navigation Menu */}
+      <div 
+        id="mobile-menu"
+        className="fixed inset-0 z-50 lg:hidden hidden"
       >
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl shadow-slate-400/20 border-2 border-slate-300/40 p-2 overflow-hidden">
-          <div className="flex flex-col space-y-1 max-h-[70vh] overflow-y-auto">
-            {navItems.map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`group flex items-center space-x-4 px-5 py-3.5 rounded-2xl transition-all duration-300 ${
-                  activeSection === item.id
-                    // Active State: Emas Gradien
-                    ? `${SILVER_GRADIENT} text-white scale-[1.03] shadow-lg shadow-slate-600/30`
-                    // Inactive State: Krem / Amber
-                    : `text-gray-700 hover:bg-[#FDF6E3] ${SILVER_HOVER_TEXT}`
-                }`}
-                style={{
-                  transitionDelay: isMenuOpen ? `${index * 50}ms` : '0ms',
-                  transform: isMenuOpen ? 'translateX(0)' : 'translateX(100px)',
-                }}
-              >
-                <item.icon
-                  size={22}
-                  className={`transition-transform duration-300 ${
-                    activeSection === item.id ? '' : 'group-hover:scale-110'
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        
+        {/* Menu Content */}
+        <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl border-t border-silver-light">
+          <div className="p-6">
+            {/* Drag Handle */}
+            <div className="w-12 h-1 bg-silver-light rounded-full mx-auto mb-6" />
+            
+            {/* Menu Header */}
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-silver-gradient rounded-full flex items-center justify-center mx-auto mb-3">
+                <SilverHeart size={32} className="text-charcoal" />
+              </div>
+              <h3 className="font-heading text-xl text-charcoal">Navigation</h3>
+            </div>
+            
+            {/* Navigation Items */}
+            <div className="space-y-2">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    scrollToSection(item.id);
+                    document.getElementById('mobile-menu')?.classList.add('hidden');
+                  }}
+                  className={`w-full p-4 rounded-xl transition-all duration-300 flex items-center space-x-3 ${
+                    activeSection === item.id
+                      ? 'bg-primary-silver/20 text-charcoal'
+                      : 'text-silver hover:bg-platinum/30 hover:text-charcoal'
                   }`}
-                />
-                <span className="font-playfair font-medium text-base">{item.label}</span>
-                {activeSection === item.id && (
-                  // Dot Indikator Emas
-                  <span className="ml-auto w-2 h-2 bg-slate-400 rounded-full animate-pulse shadow-sm" />
-                )}
-              </button>
-            ))}
+                >
+                  {item.icon}
+                  <span className="font-body font-medium">{item.label}</span>
+                  {activeSection === item.id && (
+                    <div className="ml-auto">
+                      <div className="w-2 h-2 bg-primary-silver rounded-full" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={() => document.getElementById('mobile-menu')?.classList.add('hidden')}
+              className="w-full mt-6 btn-silver py-3 font-medium"
+            >
+              Close Menu
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Active Section Indicator (Top Left) */}
-      {!isMenuOpen && (
-        <div className="md:hidden fixed top-5 left-6 z-[60] bg-white/90 backdrop-blur-md rounded-full px-4 py-2 shadow-lg border-2 border-slate-300/40 transition-all duration-300">
-          {navItems.map((item) =>
-            activeSection === item.id ? (
-              <div key={item.id} className="flex items-center space-x-2">
-                <item.icon size={16} className={SILVER_ICON} />
-                <span className={`text-xs font-playfair font-medium ${SILVER_HOVER_TEXT}`}>{item.label}</span>
-              </div>
-            ) : null
-          )}
-        </div>
-      )}
-
-      <style>{`
-        .font-playfair { font-family: 'Playfair Display', serif; }
-        .font-script { font-family: 'Great Vibes', cursive; }
-
-        /* Scrollbar untuk Mobile Menu */
-        .overflow-y-auto::-webkit-scrollbar { width: 4px; }
-        .overflow-y-auto::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, #B7873D, #D4AF37); /* Gold Scrollbar */
-          border-radius: 10px;
-        }
-      `}</style>
+      {/* Scroll to Top Button */}
+      <button
+        onClick={() => scrollToSection('hero')}
+        className={`fixed bottom-6 left-6 z-40 bg-white/95 backdrop-blur-md rounded-full shadow-2xl border border-silver-light p-3 transition-all duration-500 ${
+          isVisible 
+            ? 'opacity-100 scale-100' 
+            : 'opacity-0 scale-0 pointer-events-none'
+        }`}
+        title="Scroll to top"
+      >
+        <svg className="w-5 h-5 text-charcoal" viewBox="0 0 24 24" fill="none">
+          <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
     </>
   );
-}
+};
+
+export default FloatingNavbar;

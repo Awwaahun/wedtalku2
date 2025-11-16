@@ -1,221 +1,387 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Music, BookText, Play, Pause, Volume2, VolumeX, X, Disc3 } from 'lucide-react';
-
-interface Lyric {
-  time: number;
-  text: string;
-}
+import React, { useState, useEffect, useRef } from 'react';
+import { SilverMusic, SilverHeart } from './icons';
+import '../index.css';
 
 interface MusicPlayerProps {
-  lyrics: Lyric[];
+  lyrics?: string;
+  audioSrc?: string;
   initialShowLyrics?: boolean;
-  audioSrc: string;
   autoPlay?: boolean;
   autoPlayLyrics?: boolean;
 }
 
-// Konstanta untuk Tema Emas/Amber
-const GOLD_GRADIENT = 'bg-gradient-to-br from-amber-700 to-amber-900 hover:from-amber-800 hover:to-amber-900';
-const GOLD_TEXT = 'text-amber-800';
-const SOFT_BG = 'bg-amber-100';
-const GOLD_BORDER = 'border-amber-400/70';
-
 const MusicPlayer: React.FC<MusicPlayerProps> = ({
-  lyrics,
-  initialShowLyrics = false,
-  audioSrc,
+  lyrics = `♪ Perfect - Ed Sheeran ♪
+
+I found a love for me
+Darling, just dive right in and follow my lead
+Well, I found a girl, beautiful and sweet
+Oh, I never knew you were the someone waiting for me
+
+'Cause we were just kids when we fell in love
+Not knowing what it was
+I will not give you up this time
+But darling, just kiss me slow, your heart is all I own
+And in your eyes, you're holding mine
+
+Baby, I'm dancing in the dark
+With you between my arms
+Barefoot on the grass
+Listening to our favorite song
+
+When you said you looked a mess
+I whispered underneath my breath
+But you heard it
+Darling, you look perfect tonight
+
+Well, I found a woman, stronger than anyone I know
+She shares my dreams, I hope that someday I'll share her home
+I found a love, to carry more than just my secrets
+To carry love, to carry children of our own
+
+We are still kids, but we're so in love
+Fighting against all odds
+I know we'll be alright this time
+Darling, just hold my hand
+Be my girl, I'll be your man
+I see my future in your eyes
+
+Baby, I'm dancing in the dark
+With you between my arms
+Barefoot on the grass
+Listening to our favorite song
+
+When I saw you in that dress, looking so beautiful
+I don't deserve this, darling, you look perfect tonight
+
+Baby, I'm dancing in the dark
+With you between my arms
+Barefoot on the grass
+Listening to our favorite song
+I have faith in what I see
+Now I know I have met an angel in person
+And she looks perfect
+I don't deserve this
+You look perfect tonight
+
+♪ Forever and Always ♪`,
+  audioSrc = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  initialShowLyrics = true,
   autoPlay = false,
-  autoPlayLyrics = false,
+  autoPlayLyrics = false
 }) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showLyrics, setShowLyrics] = useState(initialShowLyrics || autoPlayLyrics);
-  const [currentLyricIndex, setCurrentLyricIndex] = useState(-1);
-  const [typedLyric, setTypedLyric] = useState('');
-  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [showControls, setShowControls] = useState(true); // Default Show Controls untuk user baru
+  const [showLyrics, setShowLyrics] = useState(initialShowLyrics);
+  const [isLyricsAnimating, setIsLyricsAnimating] = useState(autoPlayLyrics);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.7);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // --- Autoplay Logic ---
-  useEffect(() => {
-    if (!autoPlay || !audioRef.current || hasInteracted) return;
-
-    const audio = audioRef.current;
-    const playPromise = audio.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlaying(true);
-          setAutoplayBlocked(false);
-        })
-        .catch((error) => {
-          console.log('Autoplay blocked, waiting for user interaction:', error);
-          setAutoplayBlocked(true);
-          setIsPlaying(false);
-        });
-    }
-  }, [autoPlay, hasInteracted]);
-
-  // --- Music Controls ---
-  const toggleMusic = () => {
-    if (!audioRef.current) return;
-    setHasInteracted(true);
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play().catch((error) => {
-        console.error('Playback error:', error);
-      });
-    }
-    // Update isPlaying state based on audio events for accuracy
-    audioRef.current.onplaying = () => setIsPlaying(true);
-    audioRef.current.onpause = () => setIsPlaying(false);
-  };
-
-  const toggleMute = () => {
-    if (!audioRef.current) return;
-    const newMutedState = !audioRef.current.muted;
-    audioRef.current.muted = newMutedState;
-    setIsMuted(newMutedState);
-  };
-
-  // --- Lyrics Sync & Typing Effect ---
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !showLyrics) return;
-    const handleTimeUpdate = () => {
-      const currentTime = audio.currentTime;
-      const newIndex = lyrics.findIndex((lyric, index) => {
-        const nextLyric = lyrics[index + 1];
-        return currentTime >= lyric.time && (!nextLyric || currentTime < nextLyric.time);
-      });
-      if (newIndex !== -1 && newIndex !== currentLyricIndex) {
-        setCurrentLyricIndex(newIndex);
-      }
+    if (!audio) return;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setIsLyricsAnimating(false);
     };
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
-  }, [showLyrics, lyrics, currentLyricIndex]);
+
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('ended', handleEnded);
+
+    if (autoPlay) {
+      audio.play().then(() => {
+        setIsPlaying(true);
+      }).catch(error => {
+        console.log('Auto-play was prevented:', error);
+      });
+    }
+
+    audio.volume = volume;
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [autoPlay, volume]);
 
   useEffect(() => {
-    if (currentLyricIndex < 0 || !showLyrics) return;
-    const line = lyrics[currentLyricIndex].text;
-    if (typedLyric === line) return;
-    
-    let i = 0;
-    setTypedLyric('');
-    const interval = setInterval(() => {
-      setTypedLyric(line.slice(0, i + 1));
-      i++;
-      if (i > line.length) clearInterval(interval);
-    }, 50);
-    return () => clearInterval(interval);
-  }, [currentLyricIndex, showLyrics, lyrics]);
-  // --- End Lyrics Logic ---
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsLyricsAnimating(false);
+    } else {
+      audio.play().then(() => {
+        setIsPlaying(true);
+        if (showLyrics) {
+          setIsLyricsAnimating(true);
+        }
+      });
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleLyrics = () => {
+    setShowLyrics(!showLyrics);
+    if (!showLyrics && isPlaying) {
+      setIsLyricsAnimating(true);
+    } else {
+      setIsLyricsAnimating(false);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
 
   return (
     <>
-      <audio ref={audioRef} loop src={audioSrc} preload="auto" />
-
-      {/* Lyrics Container - POSISI KIRI BAWAH (MOBILE) */}
-      <div
-        className={`fixed z-40 p-4 w-full transition-all duration-500 ease-in-out pointer-events-none
-          ${showLyrics ? 'bottom-20 opacity-100' : 'bottom-12 opacity-0'}
-          
-          /* >>> PERUBAHAN DI SINI: LEFT ALIGNMENT UNTUK MOBILE & DESKTOP <<< */
-          left-6 md:left-6 w-auto p-0
-        `}
-      >
-        <div className="flex justify-start"> {/* Diganti dari justify-center ke justify-start */}
-            <div className={`bg-white/95 backdrop-blur-md ${GOLD_TEXT} text-sm rounded-2xl shadow-xl shadow-amber-900/10 px-5 py-3 border-2 ${GOLD_BORDER} text-center pointer-events-auto max-w-sm font-playfair transition-all duration-300 hover:scale-[1.02]`}>
-              <span className="italic font-medium">{typedLyric || (isPlaying ? '♪ Memainkan Lagu Pernikahan...' : '♪ Sentuh ikon musik untuk memulai')}</span>
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-silver-light p-4 w-80">
+          {/* Player Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-silver-gradient rounded-full flex items-center justify-center">
+                <SilverMusic size={20} className="text-charcoal" />
+              </div>
+              <div>
+                <p className="font-heading text-sm text-charcoal">Our Song</p>
+                <p className="font-body text-xs text-silver">Perfect - Ed Sheeran</p>
+              </div>
             </div>
-        </div>
-      </div>
-
-      {/* Main Player Controls - POSISI KIRI BAWAH (MOBILE) */}
-      <div className="fixed bottom-6 left-6 md:left-6 flex items-center z-50">
-        
-        {/* Main Toggle Button */}
-        <button
-          onClick={() => setShowControls(!showControls)}
-          className={`relative w-12 h-12 flex items-center justify-center rounded-full shadow-2xl shadow-amber-900/40 transition-all duration-500 hover:scale-110 active:scale-95 ${GOLD_GRADIENT}`}
-          title="Buka Kontrol Musik"
-        >
-          {autoplayBlocked && !hasInteracted && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border-2 border-white"></span>
-            </span>
-          )}
-          <div className={`text-white transition-transform duration-500 ease-in-out ${showControls ? 'rotate-180' : 'rotate-0'}`}>
-            {showControls ? <X size={28} /> : <Disc3 size={28} className={isPlaying ? 'animate-spin-slow' : ''} />}
-          </div>
-        </button>
-
-        {/* Collapsible secondary controls */}
-        <div className={`transition-all duration-500 ease-in-out ${showControls ? 'max-w-sm opacity-100' : 'max-w-0 opacity-0'} overflow-hidden ml-3`}>
-          <div className={`bg-white/90 backdrop-blur-md rounded-xl shadow-xl border ${GOLD_BORDER} flex items-center p-1 space-x-0.5`}>
-            
-            {/* Play/Pause Button */}
-            <button
-              onClick={toggleMusic}
-              className={`p-2.5 rounded-lg ${GOLD_TEXT} hover:${SOFT_BG} transition-colors`}
-              title={isPlaying ? 'Jeda' : 'Putar'}
-            >
-              {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-0.5" />}
-            </button>
-
-            {/* Mute/Unmute Button */}
-            {isPlaying && (
+            <div className="flex space-x-2">
               <button
-                onClick={toggleMute}
-                className={`p-2.5 rounded-lg ${GOLD_TEXT} hover:${SOFT_BG} transition-colors`}
-                title={isMuted ? 'Bunyikan' : 'Bisukan'}
+                onClick={toggleLyrics}
+                className={`p-2 rounded-lg transition-colors ${
+                  showLyrics ? 'bg-primary-silver/20 text-charcoal' : 'text-silver hover:text-charcoal'
+                }`}
+                title="Toggle Lyrics"
               >
-                {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2"/>
+                  <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/>
+                  <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2"/>
+                </svg>
               </button>
-            )}
+            </div>
+          </div>
 
-            {/* Lyrics Toggle Button */}
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <input
+              type="range"
+              min="0"
+              max={duration || 0}
+              value={currentTime}
+              onChange={handleSeek}
+              className="w-full h-1 bg-silver-light rounded-lg appearance-none cursor-pointer slider-silver"
+              style={{
+                background: `linear-gradient(to right, #C0C0C0 0%, #C0C0C0 ${(currentTime / duration) * 100}%, #E5E5E5 ${(currentTime / duration) * 100}%, #E5E5E5 100%)`
+              }}
+            />
+            <div className="flex justify-between mt-1">
+              <span className="font-body text-xs text-silver">{formatTime(currentTime)}</span>
+              <span className="font-body text-xs text-silver">{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-center space-x-4 mb-4">
             <button
-              onClick={() => setShowLyrics(!showLyrics)}
-              className={`p-2.5 rounded-lg transition-colors ${
-                showLyrics ? `${GOLD_GRADIENT} text-white shadow-md` : `${GOLD_TEXT} hover:${SOFT_BG}`
-              }`}
-              title="Tampilkan Lirik"
+              onClick={() => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = Math.max(0, currentTime - 10);
+                }
+              }}
+              className="p-2 text-silver hover:text-charcoal transition-colors"
             >
-              <BookText size={24} />
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                <polygon points="11,19 2,12 11,5" fill="currentColor"/>
+                <rect x="13" y="5" width="2" height="14" fill="currentColor"/>
+              </svg>
             </button>
+            
+            <button
+              onClick={togglePlay}
+              className="p-3 bg-silver-gradient rounded-full text-charcoal hover:shadow-medium transition-all duration-300"
+            >
+              {isPlaying ? (
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                  <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+                  <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                  <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+                </svg>
+              )}
+            </button>
+            
+            <button
+              onClick={() => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = Math.min(duration, currentTime + 10);
+                }
+              }}
+              className="p-2 text-silver hover:text-charcoal transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="5" width="2" height="14" fill="currentColor"/>
+                <polygon points="13,19 24,12 13,5" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Volume Control */}
+          <div className="flex items-center space-x-2">
+            <svg className="w-4 h-4 text-silver" viewBox="0 0 24 24" fill="none">
+              <polygon points="11,5 6,9 2,9 2,15 6,15 11,19 11,5" fill="currentColor"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="flex-1 h-1 bg-silver-light rounded-lg appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, #C0C0C0 0%, #C0C0C0 ${volume * 100}%, #E5E5E5 ${volume * 100}%, #E5E5E5 100%)`
+              }}
+            />
           </div>
         </div>
       </div>
 
-      {/* Autoplay blocked prompt */}
-      {autoplayBlocked && !hasInteracted && (
-        <div className="fixed bottom-28 left-6 w-11/12 max-w-xs md:w-auto md:left-6 md:translate-x-0 z-50 animate-fade-in pointer-events-none">
-          <div className="bg-white rounded-lg shadow-xl p-4 border-2 ${GOLD_BORDER} text-center md:text-left">
-            <p className="text-sm ${GOLD_TEXT} font-playfair font-semibold">🎵 Sentuh ikon musik</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Browser Anda memerlukan interaksi untuk memulai audio.
-            </p>
+      {/* Lyrics Display */}
+      {showLyrics && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            {/* Lyrics Header */}
+            <div className="bg-silver-gradient p-4 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <SilverHeart size={24} className="text-charcoal" />
+                <div>
+                  <h3 className="font-heading text-lg text-charcoal">Song Lyrics</h3>
+                  <p className="font-body text-sm text-charcoal/70">Perfect - Ed Sheeran</p>
+                </div>
+              </div>
+              <button
+                onClick={toggleLyrics}
+                className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+              >
+                <svg className="w-5 h-5 text-charcoal" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Lyrics Content */}
+            <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+              <pre 
+                className={`font-elegant text-lg text-charcoal leading-relaxed whitespace-pre-wrap ${
+                  isLyricsAnimating ? 'animate-pulse' : ''
+                }`}
+              >
+                {lyrics}
+              </pre>
+            </div>
+
+            {/* Footer with Controls */}
+            <div className="bg-platinum/30 p-4 flex items-center justify-center space-x-4">
+              <button
+                onClick={togglePlay}
+                className="p-2 bg-silver-gradient rounded-full text-charcoal hover:shadow-medium transition-all duration-300"
+              >
+                {isPlaying ? (
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+                    <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+                  </svg>
+                )}
+              </button>
+              <p className="font-body text-sm text-silver">
+                {isPlaying ? 'Now Playing' : 'Paused'}
+              </p>
+            </div>
           </div>
         </div>
       )}
-      
-      {/* CSS untuk Animasi Spin Disc dan Font */}
-      <style>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+
+      {/* Hidden Audio Element */}
+      <audio ref={audioRef} src={audioSrc} />
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        .slider-silver::-webkit-slider-thumb {
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        .animate-spin-slow {
-          animation: spin-slow 10s linear infinite;
+        
+        .slider-silver::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          border: none;
         }
 
-        .font-playfair { font-family: 'Playfair Display', serif; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f5f5f5;
+          border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #C0C0C0;
+          border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #A8A8A8;
+        }
       `}</style>
     </>
   );

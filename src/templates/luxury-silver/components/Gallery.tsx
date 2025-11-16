@@ -1,263 +1,311 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { SilverHeart, SilverDiamond, SilverCamera } from './icons';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../hooks/useWeddingConfig';
-
-// --- Konstanta Tema Emas ---
-const GOLD_GRADIENT_PRIMARY = 'from-amber-700 to-amber-900';
-const GOLD_TEXT_PRIMARY = 'text-amber-800';
-
-type Image = WeddingConfig['gallery'][number];
-type FilterType = 'all' | 'portrait' | 'landscape';
-
-interface GalleryItemProps {
-  image: Image;
-  index: number;
-  onClick: () => void;
-}
-
-const GalleryItem: React.FC<GalleryItemProps> = ({ image, index, onClick }) => {
-  const { elementRef, isVisible } = useScrollAnimation();
-
-  return (
-    <div
-      ref={elementRef}
-      className={`relative z-[30] backdrop-blur-sm group rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-amber-900/30 transition-all duration-500 animate-on-scroll ${
-        isVisible ? 'visible' : ''
-      } ${image.type === 'portrait' ? 'md:row-span-2' : ''}`}
-      onClick={onClick}
-      style={{ animationDelay: `${index * 0.05}s` }}
-    >
-      <img
-        src={image.url}
-        alt={image.title}
-        className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
-        loading="lazy"
-      />
-      {/* Overlay Dekoratif */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <div className="absolute bottom-0 left-0 p-4 md:p-6 text-white">
-          <h3 className="text-lg font-playfair font-semibold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out">{image.title}</h3>
-          <p className="text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">Klik untuk melihat</p>
-        </div>
-      </div>
-      {/* Tombol Maximize dengan Aksen Emas */}
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full transform scale-0 group-hover:scale-100 transition-transform duration-300 ease-out delay-100 shadow-md ring-1 ring-amber-300">
-        <Maximize2 size={16} className="text-amber-700" />
-      </div>
-    </div>
-  );
-};
+import '../index.css';
 
 interface GalleryProps {
-  config: WeddingConfig;
+  config: any;
 }
 
-export default function Gallery({ config }: GalleryProps) {
-  const [selectedImage, setSelectedImage] = useState<number | null>(null);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [filter, setFilter] = useState<FilterType>('all');
-  
-  const images = config.gallery;
+interface GalleryImage {
+  id: number;
+  url: string;
+  thumbnail: string;
+  title: string;
+  description: string;
+  category: 'pre-wedding' | 'engagement' | 'couple' | 'moments';
+}
 
-  const filteredImages = filter === 'all' ? images : images.filter(img => img.type === filter);
+const Gallery: React.FC<GalleryProps> = ({ config }) => {
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { ref: galleryRef, isVisible: galleryVisible } = useScrollAnimation();
 
-  const resetZoomAndPosition = useCallback(() => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-  }, []);
-
-  useEffect(() => {
-    if (selectedImage === null) {
-      resetZoomAndPosition();
-      document.body.style.overflow = 'auto';
-    } else {
-      document.body.style.overflow = 'hidden';
+  const galleryImages: GalleryImage[] = [
+    {
+      id: 1,
+      url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&h=800&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop',
+      title: 'Romantic Sunset',
+      description: 'A beautiful moment captured during golden hour',
+      category: 'pre-wedding'
+    },
+    {
+      id: 2,
+      url: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1200&h=800&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=300&fit=crop',
+      title: 'The Perfect Moment',
+      description: 'When he asked the most important question',
+      category: 'engagement'
+    },
+    {
+      id: 3,
+      url: 'https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=1200&h=800&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=400&h=300&fit=crop',
+      title: 'Intimate Moments',
+      description: 'Sharing quiet moments together',
+      category: 'couple'
+    },
+    {
+      id: 4,
+      url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&h=800&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=300&fit=crop',
+      title: 'First Meeting',
+      description: 'Where our journey began',
+      category: 'pre-wedding'
+    },
+    {
+      id: 5,
+      url: 'https://images.unsplash.com/photo-1516453678267-9a1e7e0747a7?w=1200&h=800&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1516453678267-9a1e7e0747a7?w=400&h=300&fit=crop',
+      title: 'First Date',
+      description: 'The beginning of something beautiful',
+      category: 'couple'
+    },
+    {
+      id: 6,
+      url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1200&h=800&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=400&h=300&fit=crop',
+      title: 'Celebration Time',
+      description: 'Joy and happiness captured forever',
+      category: 'moments'
+    },
+    {
+      id: 7,
+      url: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1200&h=800&fit=crop&auto=format',
+      thumbnail: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=300&fit=crop&auto=format',
+      title: 'Engagement Bliss',
+      description: 'The ring that sealed our forever',
+      category: 'engagement'
+    },
+    {
+      id: 8,
+      url: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=1200&h=800&fit=crop&auto=format',
+      thumbnail: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=400&h=300&fit=crop&auto=format',
+      title: 'Wedding Dreams',
+      description: 'Preparing for our big day',
+      category: 'pre-wedding'
     }
-  }, [selectedImage, resetZoomAndPosition]);
+  ];
 
-  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 3));
-  const handleZoomOut = () => {
-    setScale(prev => {
-      const newScale = Math.max(prev - 0.5, 1);
-      if (newScale === 1) {
-        setPosition({ x: 0, y: 0 });
-      }
-      return newScale;
-    });
-  };
+  const categories = [
+    { id: 'all', name: 'All Photos', icon: <SilverCamera size={16} /> },
+    { id: 'pre-wedding', name: 'Pre-Wedding', icon: <SilverHeart size={16} /> },
+    { id: 'engagement', name: 'Engagement', icon: <SilverDiamond size={16} /> },
+    { id: 'couple', name: 'Couple', icon: <SilverHeart size={16} /> },
+    { id: 'moments', name: 'Moments', icon: <SilverCamera size={16} /> }
+  ];
 
-  const handleInteractionStart = (clientX: number, clientY: number) => {
-    if (scale > 1) {
-      setIsDragging(true);
-      setDragStart({ x: clientX - position.x, y: clientY - position.y });
-    }
-  };
-  
-  const handleInteractionMove = (clientX: number, clientY: number) => {
-    if (isDragging && scale > 1) {
-      setPosition({ x: clientX - dragStart.x, y: clientY - dragStart.y });
-    }
-  };
+  const filteredImages = selectedCategory === 'all' 
+    ? galleryImages 
+    : galleryImages.filter(img => img.category === selectedCategory);
 
-  const handleInteractionEnd = () => setIsDragging(false);
-
-  const handleMouseDown = (e: React.MouseEvent) => handleInteractionStart(e.clientX, e.clientY);
-  const handleMouseMove = (e: React.MouseEvent) => handleInteractionMove(e.clientX, e.clientY);
-  const handleTouchStart = (e: React.TouchEvent) => e.touches.length === 1 && handleInteractionStart(e.touches[0].clientX, e.touches[0].clientY);
-  const handleTouchMove = (e: React.TouchEvent) => e.touches.length === 1 && handleInteractionMove(e.touches[0].clientX, e.touches[0].clientY);
-
-  const nextImage = useCallback(() => {
-    if (selectedImage !== null) {
-      setSelectedImage((prev) => (prev !== null && prev < filteredImages.length - 1 ? prev + 1 : prev));
-      resetZoomAndPosition();
-    }
-  }, [selectedImage, filteredImages.length, resetZoomAndPosition]);
-
-  const prevImage = useCallback(() => {
-    if (selectedImage !== null) {
-      setSelectedImage((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
-      resetZoomAndPosition();
-    }
-  }, [selectedImage, resetZoomAndPosition]);
-  
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (selectedImage === null) return;
+  const ImageCard = ({ image, index }: { image: GalleryImage; index: number }) => {
+    const { ref, isVisible } = useScrollAnimation();
     
-    switch(e.key) {
-      case 'ArrowRight': nextImage(); break;
-      case 'ArrowLeft': prevImage(); break;
-      case 'Escape': setSelectedImage(null); break;
-      case '+':
-      case '=': handleZoomIn(); break;
-      case '-': handleZoomOut(); break;
-    }
-  }, [selectedImage, nextImage, prevImage]);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+    return (
+      <div 
+        ref={ref}
+        className={`transform transition-all duration-700 ${
+          isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        }`}
+        style={{ transitionDelay: `${index * 100}ms` }}
+      >
+        <div className="card-silver p-2 group cursor-pointer" onClick={() => setSelectedImage(image)}>
+          <div className="relative overflow-hidden rounded-lg">
+            <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300">
+              <img 
+                src={image.thumbnail} 
+                alt={image.title}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              />
+            </div>
+            
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* Title on Hover */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+              <h4 className="text-white font-heading text-lg drop-shadow-lg">{image.title}</h4>
+              <p className="text-white/90 text-sm font-body drop-shadow-lg">{image.description}</p>
+            </div>
+            
+            {/* Silver Frame Effect */}
+            <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary-silver/50 rounded-lg transition-colors duration-300" />
+          </div>
+          
+          {/* Category Badge */}
+          <div className="mt-3 flex items-center justify-center">
+            <span className="bg-platinum/50 rounded-full px-3 py-1 text-xs font-elegant text-silver">
+              {image.category.replace('-', ' ')}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="py-16 sm:py-24 relative bg-gradient-to-br from-[#fff7e1] via-[#fff9e8] to-[#fffbed] overflow-hidden">
-      
-      {/* Background Image / Pattern Simulation */}
-      <div className="absolute inset-0 z-0 opacity-40">
-        {/* Subtle dot pattern for rich texture */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,215,100,0.05)_1px,_transparent_1px)] bg-[length:20px_20px] animate-slow-pulse"></div>
-        {/* Decorative Blur Circles */}
-        <div className="absolute top-1/4 left-0 w-64 h-64 bg-amber-200 rounded-full filter blur-3xl opacity-20"></div>
-        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-yellow-200 rounded-full filter blur-3xl opacity-20"></div>
+    <section id="gallery" className="py-16 md:py-20 bg-gradient-to-br from-gray-50 to-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C0C0C0' fill-opacity='0.3'%3E%3Cpath d='M40 30c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm0 20c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm20-20c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm0 20c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm-20-40c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm20 0c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm-20 80c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zm20 0c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        {/* Header (Emas Typography) */}
-        <div className="text-center mb-12 animate-slide-up">
-          <h1 className="text-5xl md:text-7xl font-script text-amber-900 mb-4 tracking-wide">Momen Bersama</h1>
-          <p className="text-amber-700 text-lg max-w-2xl mx-auto font-playfair italic">Koleksi momen-momen yang diabadikan, masing-masing menceritakan kisah cinta dan hubungan yang unik.</p>
+        {/* Section Header */}
+        <div ref={headerRef} className={`text-center mb-16 transition-all duration-700 ${headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <SilverCamera size={56} className="text-primary-silver drop-shadow-lg" />
+              <div className="absolute inset-0 bg-primary-silver/20 rounded-full blur-xl scale-150" />
+            </div>
+          </div>
+          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl text-charcoal mb-4">
+            Our Gallery
+          </h2>
+          <p className="font-body text-lg text-silver max-w-2xl mx-auto">
+            Capturing precious moments and memories that will last a lifetime
+          </p>
         </div>
-        
-        {/* Filter Buttons (Emas Style) */}
-        <div className="flex justify-center space-x-2 sm:space-x-4 mb-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          {(['all', 'portrait', 'landscape'] as FilterType[]).map((filterType) => (
+
+        {/* Category Filter */}
+        <div className={`flex flex-wrap justify-center gap-3 mb-12 transition-all duration-700 delay-200 ${headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          {categories.map((category) => (
             <button
-              key={filterType}
-              onClick={() => setFilter(filterType)}
-              className={`px-5 py-2 rounded-full font-medium text-sm sm:text-base transition-all duration-300 ${
-                filter === filterType
-                  // Active: Gold Gradient
-                  ? `bg-gradient-to-r ${GOLD_GRADIENT_PRIMARY} text-white shadow-xl shadow-amber-900/30 scale-105`
-                  // Inactive: Soft White/Gold
-                  : `bg-white ${GOLD_TEXT_PRIMARY} hover:bg-amber-50 border border-amber-300/50 shadow-md`
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                selectedCategory === category.id
+                  ? 'bg-silver-gradient text-charcoal shadow-medium'
+                  : 'bg-white/70 hover:bg-platinum/50 text-silver border border-silver-light'
               }`}
             >
-              {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+              {category.icon}
+              <span className="font-elegant text-sm capitalize">{category.name}</span>
             </button>
           ))}
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-fr gap-4 max-w-7xl mx-auto">
+        <div ref={galleryRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
           {filteredImages.map((image, index) => (
-            <GalleryItem key={image.url} image={image} index={index} onClick={() => setSelectedImage(index)} />
+            <ImageCard key={image.id} image={image} index={index} />
           ))}
         </div>
 
-        <div className="text-center mt-12 text-sm text-gray-500 font-playfair">
-          <p>Menampilkan {filteredImages.length} dari {images.length} foto</p>
+        {/* Upload Section */}
+        <div className={`max-w-2xl mx-auto transition-all duration-1000 delay-500 ${galleryVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="card-silver bg-gradient-to-br from-platinum/30 to-white text-center p-8">
+            <div className="flex justify-center mb-4">
+              <SilverCamera size={48} className="text-primary-silver" />
+            </div>
+            <h3 className="font-heading text-2xl text-charcoal mb-4">
+              Share Your Moments
+            </h3>
+            <p className="font-body text-secondary mb-6">
+              Have photos from our events? Share them with us and be part of our beautiful memories!
+            </p>
+            <button className="btn-silver px-6 py-3 font-medium">
+              Upload Your Photos
+            </button>
+          </div>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute top-20 left-10 opacity-20 hidden lg:block">
+          <SilverCamera size={40} className="text-primary-silver animate-pulse" />
+        </div>
+        <div className="absolute top-40 right-20 opacity-20 hidden lg:block">
+          <SilverHeart size={30} className="text-primary-silver animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="absolute bottom-20 left-20 opacity-20 hidden lg:block">
+          <SilverDiamond size={35} className="text-primary-silver animate-pulse" style={{ animationDelay: '2s' }} />
+        </div>
+        <div className="absolute bottom-40 right-10 opacity-20 hidden lg:block">
+          <SilverCamera size={25} className="text-primary-silver animate-pulse" style={{ animationDelay: '1.5s' }} />
         </div>
       </div>
 
-      {/* Lightbox Modal */}
-      {selectedImage !== null && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fade-in"
+      {/* Image Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedImage(null)}
         >
-          {/* Controls (Zoom, Download, Close) */}
-          <div className="absolute top-4 right-4 flex items-center space-x-2 z-20">
-            <button onClick={(e) => { e.stopPropagation(); handleZoomOut(); }} disabled={scale <= 1} className="p-3 rounded-full text-white bg-white/10 backdrop-blur-lg hover:bg-white/20 transition disabled:opacity-50 ring-1 ring-white/10"><ZoomOut size={20} /></button>
-            <button onClick={(e) => { e.stopPropagation(); handleZoomIn(); }} disabled={scale >= 3} className="p-3 rounded-full text-white bg-white/10 backdrop-blur-lg hover:bg-white/20 transition disabled:opacity-50 ring-1 ring-white/10"><ZoomIn size={20} /></button>
-            <a href={filteredImages[selectedImage].url} download onClick={(e) => e.stopPropagation()} className="p-3 rounded-full text-white bg-white/10 backdrop-blur-lg hover:bg-white/20 transition ring-1 ring-white/10"><Download size={20} /></a>
-            {/* Close Button (Gold Hover) */}
-            <button onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }} className={`p-3 rounded-full text-white bg-black/30 backdrop-blur-lg hover:bg-amber-700 transition`}><X size={20} /></button>
-          </div>
-
-          {/* Navigation Buttons */}
-          <button onClick={(e) => { e.stopPropagation(); prevImage(); }} disabled={selectedImage === 0} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full text-white bg-black/30 backdrop-blur-lg hover:bg-white/20 transition disabled:opacity-30 disabled:cursor-not-allowed z-20"><ChevronLeft size={32} /></button>
-          <button onClick={(e) => { e.stopPropagation(); nextImage(); }} disabled={selectedImage === filteredImages.length - 1} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full text-white bg-black/30 backdrop-blur-lg hover:bg-white/20 transition disabled:opacity-30 disabled:cursor-not-allowed z-20"><ChevronRight size={32} /></button>
-
-          {/* Image Viewer */}
           <div 
-            className="relative max-w-full max-h-full"
+            className="relative max-w-5xl w-full max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
-            style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
           >
-            <img
-              key={selectedImage}
-              src={filteredImages[selectedImage].url}
-              alt={filteredImages[selectedImage].title}
-              className="max-w-[90vw] max-h-[90vh] object-contain animate-scale-in select-none rounded-lg shadow-2xl"
-              style={{
-                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-                transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 text-silver hover:text-charcoal transition-colors shadow-medium"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+            
+            {/* Image */}
+            <div className="relative">
+              <img 
+                src={selectedImage.url} 
+                alt={selectedImage.title}
+                className="w-full h-full object-contain rounded-lg"
+              />
+              
+              {/* Silver Frame */}
+              <div className="absolute inset-0 border-4 border-white/30 rounded-lg pointer-events-none" />
+              <div className="absolute -inset-2 border-2 border-primary-silver/50 rounded-lg pointer-events-none" />
+            </div>
+            
+            {/* Image Info */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 rounded-b-lg">
+              <h3 className="text-white font-heading text-2xl mb-2">{selectedImage.title}</h3>
+              <p className="text-white/90 font-body mb-2">{selectedImage.description}</p>
+              <span className="inline-block bg-primary-silver/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs text-white font-elegant capitalize">
+                {selectedImage.category.replace('-', ' ')}
+              </span>
+            </div>
+            
+            {/* Navigation Buttons */}
+            <button
+              onClick={() => {
+                const currentIndex = filteredImages.findIndex(img => img.id === selectedImage.id);
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredImages.length - 1;
+                setSelectedImage(filteredImages[prevIndex]);
               }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleInteractionEnd}
-              onMouseLeave={handleInteractionEnd}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleInteractionEnd}
-              draggable={false}
-            />
-          </div>
-
-          {/* Image Info */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-center z-20 font-playfair">
-            <p className="font-semibold text-lg">{filteredImages[selectedImage].title}</p>
-            <p className="text-sm opacity-80">{selectedImage + 1} / {filteredImages.length}</p>
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-3 text-silver hover:text-charcoal transition-colors shadow-medium"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            
+            <button
+              onClick={() => {
+                const currentIndex = filteredImages.findIndex(img => img.id === selectedImage.id);
+                const nextIndex = currentIndex < filteredImages.length - 1 ? currentIndex + 1 : 0;
+                setSelectedImage(filteredImages[nextIndex]);
+              }}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-full p-3 text-silver hover:text-charcoal transition-colors shadow-medium"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
       )}
-      
-      {/* Custom Styles for Fonts and Animations */}
-      <style>{`
-        .font-playfair { font-family: 'Playfair Display', serif; }
-        .font-script { font-family: 'Great Vibes', cursive; }
 
-        @keyframes slow-pulse {
-            0%, 100% { opacity: 0.05; }
-            50% { opacity: 0.15; }
-        }
-        .animate-slow-pulse {
-            animation: slow-pulse 10s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+      {/* Section Divider */}
+      <div className="section-divider mt-16" />
+    </section>
   );
-}
+};
+
+export default Gallery;

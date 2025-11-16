@@ -1,117 +1,198 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { SilverFlower, SilverHeart, SilverDiamond } from './icons';
+import '../index.css';
 
 interface FloralDecorationsProps {
-  activeSection: string;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'corners' | 'floating';
+  density?: 'light' | 'medium' | 'heavy';
+  animated?: boolean;
 }
 
-const SVG_URL = 'https://files.catbox.moe/e2qiff.svg';
+const FloralDecorations: React.FC<FloralDecorationsProps> = ({ 
+  position = 'corners', 
+  density = 'medium', 
+  animated = true 
+}) => {
+  const getDensityCount = () => {
+    switch (density) {
+      case 'light': return 3;
+      case 'medium': return 5;
+      case 'heavy': return 8;
+      default: return 5;
+    }
+  };
 
-export default function FloralDecorations({ activeSection }: FloralDecorationsProps) {
-  const [showTopLeft, setShowTopLeft] = useState(false);
-  const [showTopRight, setShowTopRight] = useState(false);
-  const [showBottomLeft, setShowBottomLeft] = useState(false);
-  const [showBottomRight, setShowBottomRight] = useState(false);
-  const [showPetals, setShowPetals] = useState(false);
+  const renderDecoration = (index: number, total: number) => {
+    const elements = [
+      <SilverFlower key={`flower-${index}`} size={20 + Math.random() * 15} />,
+      <SilverHeart key={`heart-${index}`} size={18 + Math.random() * 12} />,
+      <SilverDiamond key={`diamond-${index}`} size={16 + Math.random() * 10} />
+    ];
+    
+    return elements[index % elements.length];
+  };
 
-  useEffect(() => {
-    setShowTopLeft(false);
-    const timer = setTimeout(() => setShowTopLeft(true), 250);
-    return () => clearTimeout(timer);
-  }, [activeSection]);
-
-  useEffect(() => {
-    setShowTopRight(false);
-    const timer = setTimeout(() => setShowTopRight(true), 400);
-    return () => clearTimeout(timer);
-  }, [activeSection]);
-
-  useEffect(() => {
-    setShowBottomLeft(false);
-    const timer = setTimeout(() => setShowBottomLeft(true), 550);
-    return () => clearTimeout(timer);
-  }, [activeSection]);
-
-  useEffect(() => {
-    setShowBottomRight(false);
-    const timer = setTimeout(() => setShowBottomRight(true), 700);
-    return () => clearTimeout(timer);
-  }, [activeSection]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowPetals(true);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <>
-      {/* Top Left Corner */}
-      <div
-        className={`fixed -left-5 -top-5 z-30 pointer-events-none transition-all duration-1000 ease-out ${
-          showTopLeft ? '-translate-x-20 opacity-100' : '-translate-x-full -translate-y-full opacity-0'
-        }`}
-      >
-        <img src={SVG_URL} alt="Floral decoration" className="w-60 h-60 md:w-64 md:h-64 opacity-70" />
-      </div>
-
-      {/* Top Right Corner */}
-      <div
-        className={`fixed -right-5 -top-5 z-30 pointer-events-none transition-all duration-1000 ease-out ${
-          showTopRight ? 'translate-x-20 opacity-100' : 'translate-x-full -translate-y-full opacity-0'
-        }`}
-      >
-        <img src={SVG_URL} alt="Floral decoration" className="w-60 h-60 md:w-64 md:h-64 transform -scale-x-100 opacity-70" />
-      </div>
-
-      {/* Bottom Left Corner */}
-      <div
-        className={`fixed -left-5 -bottom-5 z-30 pointer-events-none transition-all duration-1000 ease-out ${
-          showBottomLeft ? '-translate-x-20 opacity-100' : '-translate-x-full translate-y-full opacity-0'
-        }`}
-      >
-        <img src={SVG_URL} alt="Floral decoration" className="w-60 h-60 md:w-64 md:h-64 transform -scale-y-100 opacity-70" />
-      </div>
-
-      {/* Bottom Right Corner */}
-      <div
-        className={`fixed -right-5 -bottom-5 z-30 pointer-events-none transition-all duration-1000 ease-out ${
-          showBottomRight ? 'translate-x-20 opacity-100' : 'translate-x-full translate-y-full opacity-0'
-        }`}
-      >
-        <img src={SVG_URL} alt="Floral decoration" className="w-60 h-60 md:w-64 md:h-64 transform -scale-x-100 -scale-y-100 opacity-70" />
-      </div>
-
-      {/* Floating petals effect */}
-      {showPetals && (
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-          {[...Array(12)].map((_, i) => (
+  const getCornerDecorations = (corner: string) => {
+    const count = getDensityCount();
+    
+    return (
+      <div className={`absolute ${corner} pointer-events-none`}>
+        <div className="relative">
+          {/* Main decoration */}
+          <div className="transform -translate-x-1/2 -translate-y-1/2">
+            <div className={`relative ${animated ? 'animate-float' : ''}`} style={{ animationDelay: `${Math.random() * 2}s` }}>
+              <SilverFlower size={40} className="text-primary-silver/60" />
+              <div className="absolute inset-0 bg-primary-silver/20 rounded-full blur-xl scale-150" />
+            </div>
+          </div>
+          
+          {/* Surrounding decorations */}
+          {[...Array(count)].map((_, index) => (
             <div
-              key={`petal-${i}`}
-              className="absolute animate-float-petal"
+              key={index}
+              className={`absolute ${animated ? 'animate-pulse' : ''}`}
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `-10%`,
-                animationDelay: `${i * 1.5}s`,
-                animationDuration: `${10 + Math.random() * 10}s`,
+                top: `${-20 + (index * 15)}px`,
+                left: `${-15 + (index * 8)}px`,
+                animationDelay: `${index * 0.3}s`
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <ellipse
-                  cx="10"
-                  cy="10"
-                  rx={4 + Math.random() * 2}
-                  ry={8 + Math.random() * 2}
-                  fill="#FDB9C8"
-                  opacity="0.4"
-                  transform={`rotate(${Math.random() * 360} 10 10)`}
-                />
-              </svg>
+              {renderDecoration(index, count)}
             </div>
           ))}
         </div>
-      )}
-    </>
-  );
-}
+      </div>
+    );
+  };
+
+  const getFloatingDecorations = () => {
+    const count = getDensityCount() * 2;
+    
+    return (
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {[...Array(count)].map((_, index) => (
+          <div
+            key={index}
+            className={`absolute ${animated ? 'animate-float-slow' : ''}`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${5 + Math.random() * 3}s`
+            }}
+          >
+            <div className="transform rotate-45">
+              {renderDecoration(index, count)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderPositionalDecorations = () => {
+    const count = getDensityCount();
+    
+    switch (position) {
+      case 'top-left':
+        return (
+          <div className="absolute top-8 left-8 pointer-events-none">
+            {[...Array(count)].map((_, index) => (
+              <div
+                key={index}
+                className={`absolute ${animated ? 'animate-pulse' : ''}`}
+                style={{
+                  top: `${index * 20}px`,
+                  left: `${index * 15}px`,
+                  animationDelay: `${index * 0.2}s`
+                }}
+              >
+                {renderDecoration(index, count)}
+              </div>
+            ))}
+          </div>
+        );
+        
+      case 'top-right':
+        return (
+          <div className="absolute top-8 right-8 pointer-events-none">
+            {[...Array(count)].map((_, index) => (
+              <div
+                key={index}
+                className={`absolute ${animated ? 'animate-pulse' : ''}`}
+                style={{
+                  top: `${index * 20}px`,
+                  right: `${index * 15}px`,
+                  animationDelay: `${index * 0.2}s`
+                }}
+              >
+                {renderDecoration(index, count)}
+              </div>
+            ))}
+          </div>
+        );
+        
+      case 'bottom-left':
+        return (
+          <div className="absolute bottom-8 left-8 pointer-events-none">
+            {[...Array(count)].map((_, index) => (
+              <div
+                key={index}
+                className={`absolute ${animated ? 'animate-pulse' : ''}`}
+                style={{
+                  bottom: `${index * 20}px`,
+                  left: `${index * 15}px`,
+                  animationDelay: `${index * 0.2}s`
+                }}
+              >
+                {renderDecoration(index, count)}
+              </div>
+            ))}
+          </div>
+        );
+        
+      case 'bottom-right':
+        return (
+          <div className="absolute bottom-8 right-8 pointer-events-none">
+            {[...Array(count)].map((_, index) => (
+              <div
+                key={index}
+                className={`absolute ${animated ? 'animate-pulse' : ''}`}
+                style={{
+                  bottom: `${index * 20}px`,
+                  right: `${index * 15}px`,
+                  animationDelay: `${index * 0.2}s`
+                }}
+              >
+                {renderDecoration(index, count)}
+              </div>
+            ))}
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  // Render based on position
+  switch (position) {
+    case 'corners':
+      return (
+        <>
+          {getCornerDecorations('top-4 left-4')}
+          {getCornerDecorations('top-4 right-4')}
+          {getCornerDecorations('bottom-4 left-4')}
+          {getCornerDecorations('bottom-4 right-4')}
+        </>
+      );
+      
+    case 'floating':
+      return getFloatingDecorations();
+      
+    default:
+      return renderPositionalDecorations();
+  }
+};
+
+export default FloralDecorations;

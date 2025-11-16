@@ -1,4 +1,3 @@
-// src/templates/luxury-silver/App.tsx - Luxury Silver Theme
 import { useState, useEffect } from 'react';
 import { Heart, Calendar, Users, Gift, Wallet, MessageCircle, UserCircle, Send, Film } from 'lucide-react';
 import Hero from './components/Hero';
@@ -22,8 +21,8 @@ import { useWeddingConfig } from './hooks/useWeddingConfig';
 import { useMergedConfig } from './hooks/useMergedConfig';
 import { UserInvitationConfig } from '../../lib/supabase';
 import LoginModal from './components/LoginModal';
-// ClientDashboard not used in luxury-silver template
-import FloatingNavbar from './components/FloatingNavbar';
+import ClientDashboard from './components/ClientDashboard';
+import  FloatingNavbar from './components/FloatingNavbar';
 import './index.css';
 
 interface TemplateProps {
@@ -49,6 +48,7 @@ function App({ invitationId, userConfig }: TemplateProps) {
   
   const [guestName, setGuestName] = useState<string | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
   // Get guest name from URL parameter
   useEffect(() => {
@@ -58,7 +58,7 @@ function App({ invitationId, userConfig }: TemplateProps) {
       setGuestName(guest);
     }
   }, []);
-
+  
   // Apply custom theme colors to CSS variables
   useEffect(() => {
     if (weddingConfig.theme) {
@@ -67,7 +67,7 @@ function App({ invitationId, userConfig }: TemplateProps) {
       document.documentElement.style.setProperty('--color-accent', weddingConfig.theme.accent);
     }
   }, [weddingConfig.theme]);
-
+  
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -111,25 +111,33 @@ function App({ invitationId, userConfig }: TemplateProps) {
   };
 
   useEffect(() => {
-    if (isLoading || isModalOpen || isLoginOpen) {
+    if (isLoading || isModalOpen || isDashboardOpen || isLoginOpen) {
       document.body.style.overflow = 'hidden';
     } else if (!showCinematic) {
       document.body.style.overflow = 'auto';
     }
-  }, [isLoading, isModalOpen, showCinematic, isLoginOpen]);
+  }, [isLoading, isModalOpen, showCinematic, isDashboardOpen, isLoginOpen]);
 
   const scrollToSection = (id: string) => {
     setActiveSection(id);
     const element = document.getElementById(id);
     element?.scrollIntoView({ behavior: 'smooth' });
   };
-
+  
   const handleAdminAccess = () => setIsLoginOpen(true);
 
   const handleLogin = (username: string, password: string) => {
     if (username === 'admin' && password === 'wedding2025') {
       setIsLoginOpen(false);
+      setIsDashboardOpen(true);
     }
+  };
+  
+  const handleSaveConfig = (newConfig: typeof weddingConfig) => {
+    // Note: This is for ClientDashboard (admin panel)
+    // User config is saved via InvitationConfigModal in UserPanel
+    console.log('Config saved from admin dashboard:', newConfig);
+    setIsDashboardOpen(false);
   };
 
   if (isLoading) return <LoadingScreen />;
@@ -137,6 +145,7 @@ function App({ invitationId, userConfig }: TemplateProps) {
   return (
     <>
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} onLogin={handleLogin} />
+      <ClientDashboard isOpen={isDashboardOpen} onClose={() => setIsDashboardOpen(false)} config={weddingConfig} onSave={handleSaveConfig} />
 
       <InvitationModal isOpen={isModalOpen} onOpen={onInvitationOpened} config={weddingConfig} guestName={guestName} />
       <CinematicIntro show={showCinematic} onClose={() => setShowCinematic(false)} config={weddingConfig} />
@@ -148,101 +157,60 @@ function App({ invitationId, userConfig }: TemplateProps) {
           
           <FloatingNavbar activeSection={activeSection} scrollToSection={scrollToSection} />
 
-          {/* Hero Section */}
-          <section id="hero">
-            <Hero onAdminAccess={handleAdminAccess} config={weddingConfig} />
-          </section>
+          <main>
+            <div id="hero"><Hero onAdminAccess={handleAdminAccess} config={weddingConfig} /></div>
+            <Countdown config={weddingConfig} />
+            <div id="couple"><Couple config={weddingConfig} /></div>
+            <div id="story"><Story config={weddingConfig} /></div>
+            <div id="event"><EventDetails config={weddingConfig} /></div>
+            <div id="gallery"><Gallery config={weddingConfig} /></div>
+            <div id="donation"><Donation config={weddingConfig} /></div>
+            <div id="rsvp"><RSVP invitationId={invitationId} /></div>
+            <div id="prayer"><PrayerDisplay /></div>
+            <PrayerLetter config={weddingConfig} />
+            <GuestBook invitationId={invitationId} />
+          </main>
 
-          {/* Countdown Section */}
-          {mainVisible && (
-            <section id="countdown">
-              <Countdown config={weddingConfig} />
-            </section>
+          {showMusicButton && (
+            <MusicPlayer
+              lyrics={weddingConfig.music.lyrics}
+              audioSrc={weddingConfig.music.audioSrc}
+              initialShowLyrics={true}
+              autoPlay={playMusicTrigger}
+              autoPlayLyrics={playMusicTrigger}
+            />
           )}
 
-          {/* Couple Section */}
-          {mainVisible && (
-            <section id="couple">
-              <Couple config={weddingConfig} />
-            </section>
-          )}
-
-          {/* Story Section */}
-          {mainVisible && (
-            <section id="story">
-              <Story config={weddingConfig} />
-            </section>
-          )}
-
-          {/* Event Details Section */}
-          {mainVisible && (
-            <section id="event">
-              <EventDetails config={weddingConfig} />
-            </section>
-          )}
-
-          {/* Gallery Section */}
-          {mainVisible && (
-            <section id="gallery">
-              <Gallery config={weddingConfig} />
-            </section>
-          )}
-
-          {/* Donation Section */}
-          {mainVisible && (
-            <section id="donation">
-              <Donation config={weddingConfig} />
-            </section>
-          )}
-
-          {/* RSVP Section */}
-          {mainVisible && (
-            <section id="rsvp">
-              <RSVP config={weddingConfig} />
-            </section>
-          )}
-
-          {/* Prayer Section */}
-          {mainVisible && (
-            <section id="prayer">
-              <PrayerDisplay config={weddingConfig} />
-              <PrayerLetter config={weddingConfig} />
-              <GuestBook config={weddingConfig} />
-            </section>
-          )}
-
-          {/* Footer */}
-          <footer className="bg-gradient-to-r from-slate-100 to-slate-200 py-8 text-center">
-            <div className="container mx-auto px-4">
-              <div className="flex flex-col md:flex-row items-center justify-between">
-                <div className="mb-4 md:mb-0">
-                  <p className="text-slate-600 text-sm">
-                    © 2025 {weddingConfig.couple.groom.name} & {weddingConfig.couple.bride.name}
-                  </p>
-                </div>
-                <div>
-                  <a 
-                    href="https://wedtalku.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-slate-600 hover:text-slate-800 transition-colors text-sm"
-                  >
-                    <span className="text-sm">Design & Promotion by <span className="font-semibold">WedTalku</span></span>
-                  </a>
-                </div>
+          <footer className="bg-gray-900 text-white py-12 relative z-10">
+            <div className="container mx-auto px-4 text-center">
+              <Heart className="inline-block text-primary mb-2" size={24} />
+              <p className="font-serif text-lg">{weddingConfig.couple.groom.name} & {weddingConfig.couple.bride.name}</p>
+              <p className="text-sm">Made with love for our special day</p>
+              <button
+                onClick={() => setShowCinematic(true)}
+                className="mt-4 px-4 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-all duration-300 inline-flex items-center justify-center space-x-2 disabled:opacity-50 hover:scale-105 hover:shadow-lg"
+              >
+                <Film size={20} />
+                <span>Watch Our Cinematic Story</span>
+              </button>
+              <p className="text-xs text-gray-400 mt-6">© 2025 {weddingConfig.couple.groom.name} & {weddingConfig.couple.bride.name} - All rights reserved</p>
+              
+              {/* Design & Promotion By WedTalku */}
+              <div className="mt-8 pt-6 border-t border-gray-700">
+                <a 
+                  href="https://wedtalku.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-2 text-gray-400 hover:text-rose-400 transition-colors duration-300 group"
+                >
+                  <Heart className="w-4 h-4 group-hover:fill-current" />
+                  <span className="text-sm">Design & Promotion by <span className="font-semibold">WedTalku</span></span>
+                </a>
               </div>
             </div>
           </footer>
         </div>
       </div>
-
-      {/* Music Player - Always visible after invitation opened */}
-      {showMusicButton && (
-        <MusicPlayer 
-          trigger={playMusicTrigger} 
-          config={weddingConfig}
-        />
-      )}
     </>
   );
 }

@@ -1,285 +1,308 @@
-import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
+import { SilverHeart, SilverDiamond, SilverStar } from './icons';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
-import type { WeddingConfig } from '../hooks/useWeddingConfig';
+import '../index.css';
 
 interface StoryProps {
-  config: WeddingConfig;
+  config: any;
 }
 
-export default function Story({ config }: StoryProps) {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+interface StoryEvent {
+  id: number;
+  date: string;
+  title: string;
+  description: string;
+  image: string;
+  type: 'first-meet' | 'first-date' | 'proposal' | 'engagement';
+}
 
-  const stories = config.story;
+const Story: React.FC<StoryProps> = ({ config }) => {
+  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { ref: timelineRef, isVisible: timelineVisible } = useScrollAnimation();
 
-  const minSwipeDistance = 50;
-
-  // --- Handlers for Swipe/Drag (TIDAK BERUBAH) ---
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentTouch = e.touches[0].clientX;
-    const diff = currentTouch - touchStart;
-    setOffset(diff);
-    setTouchEnd(currentTouch);
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    setOffset(0);
-
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && currentSlide < stories.length - 1) {
-      setCurrentSlide(currentSlide + 1);
+  const storyEvents: StoryEvent[] = [
+    {
+      id: 1,
+      date: 'March 15, 2020',
+      title: 'The First Meeting',
+      description: 'Fate brought us together at a quaint coffee shop in downtown. A chance encounter that would change our lives forever.',
+      image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=400&fit=crop',
+      type: 'first-meet'
+    },
+    {
+      id: 2,
+      date: 'April 22, 2020',
+      title: 'Our First Date',
+      description: 'A magical evening under the stars, sharing dreams and laughter. We knew from that moment that this was something special.',
+      image: 'https://images.unsplash.com/photo-1516453678267-9a1e7e0747a7?w=600&h=400&fit=crop',
+      type: 'first-date'
+    },
+    {
+      id: 3,
+      date: 'December 25, 2023',
+      title: 'The Proposal',
+      description: 'On a snowy Christmas morning, surrounded by family and love, I asked the most important question of my life.',
+      image: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&h=400&fit=crop',
+      type: 'proposal'
+    },
+    {
+      id: 4,
+      date: 'January 1, 2024',
+      title: 'The Engagement',
+      description: 'We rang in the New Year as an engaged couple, ready to embark on our forever journey together.',
+      image: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&h=400&fit=crop',
+      type: 'engagement'
     }
-    if (isRightSwipe && currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
-  };
+  ];
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setTouchStart(e.clientX);
-    setIsDragging(true);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const diff = e.clientX - touchStart;
-    setOffset(diff);
-    setTouchEnd(e.clientX);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setOffset(0);
-
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && currentSlide < stories.length - 1) {
-      setCurrentSlide(currentSlide + 1);
-    }
-    if (isRightSwipe && currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
+  const getEventIcon = (type: StoryEvent['type']) => {
+    switch (type) {
+      case 'first-meet':
+        return <SilverStar size={24} className="text-primary-silver" />;
+      case 'first-date':
+        return <SilverHeart size={24} className="text-primary-silver" />;
+      case 'proposal':
+        return <SilverDiamond size={24} className="text-primary-silver" />;
+      case 'engagement':
+        return <SilverStar size={24} className="text-primary-silver" />;
+      default:
+        return <SilverHeart size={24} className="text-primary-silver" />;
     }
   };
 
-  const nextSlide = () => {
-    if (currentSlide < stories.length - 1) {
-      setCurrentSlide(currentSlide + 1);
-    }
-  };
-
-  const prevSlide = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
-  };
-  // --- End Handlers ---
-
-  const { elementRef, isVisible } = useScrollAnimation();
-
-  // Auto-slide logic (dipertahankan)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % stories.length);
-    }, 5000);
-
-    return () => clearInterval(timer);
-  }, [stories.length]);
-
-  return (
-    <div className="relative py-20 overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-fixed" // bg-fixed untuk parallax sederhana
-        style={{ backgroundImage: `url(${config.hero.backgroundImage})` }}
-      />
-      
-      {/* Overlay: Gelap/Krem Transparan untuk Kontras Teks */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#fefbf5]/90 via-[#f9f4ec]/85 to-[#f7f0e7]/90 backdrop-blur-[1px]" />
-
-      <div className="relative z-10 container mx-auto px-4">
-        <div className="text-center mb-16">
-          <p className="text-lg text-amber-600 font-script italic mb-1 drop-shadow-sm">Our Milestones</p>
-          <h2 className="text-4xl md:text-5xl font-playfair font-extrabold text-amber-900 mb-4 drop-shadow-md">
-            Kisah Cinta Kami
-          </h2>
-          {/* Divider bertema emas */}
-          <div className="flex items-center justify-center space-x-4">
-            <div className="h-px w-16 bg-amber-400/70"></div>
-            <Heart className="text-amber-700 drop-shadow-sm" size={20} fill="currentColor" />
-            <div className="h-px w-16 bg-amber-400/70"></div>
+  const StoryCard = ({ 
+    event, 
+    index, 
+    isEven 
+  }: { 
+    event: StoryEvent; 
+    index: number; 
+    isEven: boolean 
+  }) => {
+    const { ref, isVisible } = useScrollAnimation();
+    
+    return (
+      <div 
+        ref={ref}
+        className={`flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-8 mb-12 transition-all duration-1000 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}
+      >
+        {/* Image */}
+        <div className={`w-full md:w-1/2 ${isEven ? 'md:pr-8' : 'md:pl-8'}`}>
+          <div 
+            className="relative overflow-hidden rounded-lg cursor-pointer group"
+            onClick={() => setSelectedEvent(event.id)}
+          >
+            <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300">
+              <img 
+                src={event.image} 
+                alt={event.title}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <p className="text-white font-medium">View Details</p>
+            </div>
+            
+            {/* Decorative Frame */}
+            <div className="absolute -inset-2 border-2 border-primary-silver/30 rounded-lg pointer-events-none group-hover:border-primary-silver/60 transition-colors duration-300" />
           </div>
         </div>
 
-        <div 
-          ref={elementRef}
-          className={`relative z-20 max-w-6xl mx-auto transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-        >
-          {/* Carousel Container: Lebih Mewah */}
-          <div
-            ref={containerRef}
-            // Shadow dan Border Lebih Kuat & Ganda
-            className="relative overflow-hidden rounded-3xl shadow-[0_20px_50px_rgba(31,30,26,0.2)] cursor-grab active:cursor-grabbing border-4 border-double border-amber-400/70"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
-            <div
-              className="flex transition-transform duration-700 ease-out" // Durasi transisi diperlambat sedikit
-              style={{
-                transform: isDragging 
-                  ? `translateX(calc(-${currentSlide * 100}% + ${offset}px))`
-                  : `translateX(-${currentSlide * 100}%)`,
-              }}
-            >
-              {stories.map((story, index) => (
-                <div
-                  key={index}
-                  // Latar belakang slide dengan subtle gradient
-                  className="min-w-full flex flex-col md:flex-row items-center gap-10 p-10 md:p-16 bg-white/95"
-                >
-                  {/* Image Section */}
-                  <div className="md:w-1/2 w-full order-1 md:order-none">
-                    <div className="relative group">
-                      {/* Bingkai Emas dengan Posisi yang sedikit offset */}
-                      <div className="absolute inset-4 bg-amber-400/50 rounded-2xl transform rotate-1 group-hover:rotate-2 transition-transform duration-500 shadow-md"></div>
-                      <img
-                        src={story.image}
-                        alt={story.title}
-                        // Gambar lebih menonjol dengan border ganda
-                        className="relative rounded-2xl w-full h-80 md:h-96 object-cover shadow-2xl shadow-black/30 border-4 border-amber-100/80 transform group-hover:scale-[1.03] transition-transform duration-500"
-                        draggable="false"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="md:w-1/2 w-full text-center md:text-left order-2 md:order-none">
-                    {/* Badge Tanggal dengan efek 3D */}
-                    <div className="inline-block bg-amber-700 text-white px-5 py-2 rounded-full text-sm font-medium mb-4 shadow-lg border-b-4 border-amber-900/50 uppercase tracking-widest">
-                      {story.date}
-                    </div>
-                    {/* Judul dengan Gradien Emas Penuh */}
-                    <h3 className="text-4xl md:text-5xl font-playfair font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-700 mb-6 drop-shadow-md">
-                      {story.title}
-                    </h3>
-                    {/* Divider bertema emas */}
-                    <div className="flex items-center justify-center md:justify-start space-x-2 mb-6">
-                      <div className="h-px w-12 bg-amber-500/80"></div>
-                      <Heart className="text-amber-700 drop-shadow-sm" size={18} fill="currentColor" />
-                      <div className="h-px w-12 bg-amber-500/80"></div>
-                    </div>
-                    <p className="text-gray-700 text-lg leading-relaxed italic border-l-4 border-amber-300/80 pl-4">
-                      {story.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+        {/* Content */}
+        <div className={`w-full md:w-1/2 ${isEven ? 'md:pl-8' : 'md:pr-8'}`}>
+          <div className="card-silver">
+            <div className="flex items-center space-x-3 mb-4">
+              {getEventIcon(event.type)}
+              <span className="font-elegant text-silver text-sm uppercase tracking-wider">
+                {event.date}
+              </span>
             </div>
-
-            {/* Navigation Arrows: Lebih Mewah (Tombol Besar, Sudut Penuh, Warna Solid) */}
+            <h3 className="font-heading text-2xl text-charcoal mb-3">
+              {event.title}
+            </h3>
+            <p className="font-body text-secondary leading-relaxed mb-4">
+              {event.description}
+            </p>
             <button
-              onClick={prevSlide}
-              disabled={currentSlide === 0}
-              className={`absolute left-0 top-1/2 -translate-y-1/2 bg-amber-800/80 hover:bg-amber-700 p-4 rounded-r-full shadow-2xl transition-all duration-300 z-30 ${
-                currentSlide === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:scale-x-105 text-white'
-              }`}
+              onClick={() => setSelectedEvent(event.id)}
+              className="btn-silver text-sm font-medium"
             >
-              <ChevronLeft size={28} />
-            </button>
-
-            <button
-              onClick={nextSlide}
-              disabled={currentSlide === stories.length - 1}
-              className={`absolute right-0 top-1/2 -translate-y-1/2 bg-amber-800/80 hover:bg-amber-700 p-4 rounded-l-full shadow-2xl transition-all duration-300 z-30 ${
-                currentSlide === stories.length - 1 ? 'opacity-40 cursor-not-allowed' : 'hover:scale-x-105 text-white'
-              }`}
-            >
-              <ChevronRight size={28} />
+              Read More
             </button>
           </div>
+        </div>
 
-          {/* Dots Indicator: Lebih Interaktif */}
-          <div className="flex justify-center items-center space-x-3 mt-8">
-            {stories.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`transition-all duration-300 rounded-full border border-amber-300 shadow-md ${
-                  currentSlide === index
-                    ? 'w-10 h-3 bg-amber-700 dot-active-pulse' // Efek pulse pada dot aktif
-                    : 'w-3 h-3 bg-amber-300 hover:bg-amber-500' 
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Progress Bar: Lebih Tebal */}
-          <div className="mt-6 max-w-sm mx-auto">
-            <div className="h-2 bg-amber-200 rounded-full overflow-hidden shadow-inner">
-              <div
-                className="h-full bg-gradient-to-r from-amber-600 to-amber-800 transition-all duration-700"
-                style={{ width: `${((currentSlide + 1) / stories.length) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Swipe Hint */}
-          <div className="text-center mt-6 text-sm text-amber-800/90 tracking-wider">
-            <p className="animate-pulse-slow">← Swipe or drag to explore →</p>
-          </div>
+        {/* Timeline Dot */}
+        <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 items-center justify-center">
+          <div className="w-4 h-4 bg-primary-silver rounded-full border-4 border-white shadow-medium" />
         </div>
       </div>
-      
-      {/* CSS Khusus untuk Font dan Animasi */}
-      <style>
-        {`
-          .font-playfair { font-family: 'Playfair Display', serif; }
-          .font-script { font-family: 'Great Vibes', cursive; }
+    );
+  };
 
-          /* Animasi Pulse Lambat untuk Swipe Hint */
-          @keyframes pulse-slow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-          .animate-pulse-slow {
-            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          }
+  return (
+    <section id="story" className="py-16 md:py-20 bg-gradient-to-br from-gray-50 to-platinum relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23C0C0C0' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+        }} />
+      </div>
 
-          /* Animasi Pulse Cepat untuk Dot Aktif */
-          @keyframes dot-pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-          }
-          .dot-active-pulse {
-            animation: dot-pulse 1.5s ease-in-out infinite;
-          }
-        `}
-      </style>
-    </div>
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Section Header */}
+        <div ref={headerRef} className={`text-center mb-16 transition-all duration-700 ${headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <SilverHeart size={56} className="text-primary-silver drop-shadow-lg" />
+              <div className="absolute inset-0 bg-primary-silver/20 rounded-full blur-xl scale-150" />
+            </div>
+          </div>
+          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl text-charcoal mb-4">
+            Our Love Story
+          </h2>
+          <p className="font-body text-lg text-silver max-w-2xl mx-auto">
+            Every chapter of our journey has brought us closer to this beautiful moment
+          </p>
+        </div>
+
+        {/* Timeline */}
+        <div ref={timelineRef} className="relative max-w-4xl mx-auto">
+          {/* Timeline Line */}
+          <div className={`absolute left-1/2 transform -translate-x-1/2 w-0.5 h-full bg-gradient-to-b from-primary-silver to-light-silver transition-all duration-1000 delay-300 ${
+            timelineVisible ? 'opacity-100' : 'opacity-0'
+          }`} />
+
+          {/* Story Events */}
+          {storyEvents.map((event, index) => (
+            <div key={event.id} className="relative">
+              <StoryCard 
+                event={event} 
+                index={index} 
+                isEven={index % 2 === 0}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Promise Section */}
+        <div className={`mt-16 text-center transition-all duration-1000 delay-700 ${timelineVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="card-silver max-w-3xl mx-auto p-8 bg-gradient-to-br from-white to-platinum/30">
+            <div className="flex justify-center mb-6">
+              <div className="flex space-x-2">
+                {[...Array(5)].map((_, i) => (
+                  <SilverStar 
+                    key={i} 
+                    size={20} 
+                    className="text-primary-silver" 
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+            <h3 className="font-heading text-2xl md:text-3xl text-charcoal mb-4">
+              Our Promise
+            </h3>
+            <p className="font-script text-xl text-secondary leading-relaxed mb-6">
+              "To love, honor, and cherish each other for all the days of our lives, through every joy and challenge, 
+              growing stronger together with each passing moment."
+            </p>
+            <div className="flex justify-center space-x-4">
+              <SilverHeart size={24} className="text-primary-silver" />
+              <span className="font-elegant text-silver">Forever & Always</span>
+              <SilverHeart size={24} className="text-primary-silver" />
+            </div>
+          </div>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute top-10 left-10 opacity-20 hidden lg:block">
+          <SilverStar size={30} className="text-primary-silver animate-pulse" />
+        </div>
+        <div className="absolute top-20 right-20 opacity-20 hidden lg:block">
+          <SilverHeart size={25} className="text-primary-silver animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="absolute bottom-20 left-20 opacity-20 hidden lg:block">
+          <SilverDiamond size={35} className="text-primary-silver animate-pulse" style={{ animationDelay: '2s' }} />
+        </div>
+        <div className="absolute bottom-10 right-10 opacity-20 hidden lg:block">
+          <SilverStar size={28} className="text-primary-silver animate-pulse" style={{ animationDelay: '1.5s' }} />
+        </div>
+      </div>
+
+      {/* Event Detail Modal */}
+      {selectedEvent && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedEvent(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const event = storyEvents.find(e => e.id === selectedEvent);
+              if (!event) return null;
+              
+              return (
+                <div className="relative">
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 text-silver hover:text-charcoal transition-colors shadow-medium"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                  
+                  {/* Image */}
+                  <div className="aspect-video md:aspect-[16/9]">
+                    <img 
+                      src={event.image} 
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="p-8">
+                    <div className="flex items-center space-x-3 mb-4">
+                      {getEventIcon(event.type)}
+                      <span className="font-elegant text-silver text-sm uppercase tracking-wider">
+                        {event.date}
+                      </span>
+                    </div>
+                    <h3 className="font-heading text-3xl text-charcoal mb-4">
+                      {event.title}
+                    </h3>
+                    <p className="font-body text-secondary leading-relaxed text-lg mb-6">
+                      {event.description}
+                    </p>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setSelectedEvent(null)}
+                        className="btn-silver px-8 py-3"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Section Divider */}
+      <div className="section-divider mt-16" />
+    </section>
   );
-}
+};
+
+export default Story;
