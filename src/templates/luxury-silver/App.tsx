@@ -1,3 +1,4 @@
+// src/templates/modern-minimalist/App.tsx - Updated with config merge
 import { useState, useEffect } from 'react';
 import { Heart, Calendar, Users, Gift, Wallet, MessageCircle, UserCircle, Send, Film } from 'lucide-react';
 import Hero from './components/Hero';
