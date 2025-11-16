@@ -22,19 +22,40 @@ const InvitationModal: React.FC<InvitationModalProps> = ({
   const brideName = config?.couple?.bride?.name || 'Isabella';
 
   useEffect(() => {
+    console.log('📨 InvitationModal mounted, isOpen:', isOpen);
     if (isOpen) {
+      // Force body overflow hidden
+      document.body.style.overflow = 'hidden';
       setIsAnimating(true);
       setTimeout(() => setShowContent(true), 300);
     } else {
       setShowContent(false);
       setTimeout(() => setIsAnimating(false), 300);
     }
+    
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
   }, [isOpen]);
 
-  if (!isAnimating) return null;
+  // Force render if isOpen is true
+  if (!isOpen && !isAnimating) {
+    console.log('❌ Modal not rendering - isOpen:', isOpen, 'isAnimating:', isAnimating);
+    return null;
+  }
+
+  console.log('✅ Modal rendering - isOpen:', isOpen);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ display: 'flex' }} // Force display
+    >
+      {/* Debug overlay */}
+      <div className="fixed top-2 left-2 bg-green-500 text-white px-2 py-1 text-xs rounded z-[101]">
+        InvitationModal Active
+      </div>
+
       {/* Backdrop */}
       <div 
         className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-500 ${

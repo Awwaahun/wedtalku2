@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, Film } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, Calendar, Users, Gift, Wallet, MessageCircle, UserCircle, Send, Film } from 'lucide-react';
 import Hero from './components/Hero';
 import Countdown from './components/Countdown';
 import Couple from './components/Couple';
@@ -12,21 +12,32 @@ import GuestBook from './components/GuestBook';
 import LoadingScreen from './components/LoadingScreen';
 import InvitationModal from './components/InvitationModal';
 import FloralDecorations from './components/FloralDecorations';
-import FloatingNavbar from './components/FloatingNavbar';
 import { useInvitation } from './hooks/useInvitation';
 import MusicPlayer from './components/MusicPlayer';
 import PrayerDisplay from './components/PrayerDisplay';
 import PrayerLetter from './components/PrayerLetter';
 import CinematicIntro from './components/CinematicIntro';
-import { useWeddingConfig, type WeddingConfig } from './hooks/useWeddingConfig';
+import { useWeddingConfig } from './hooks/useWeddingConfig';
+import { useMergedConfig } from './hooks/useMergedConfig';
+import { UserInvitationConfig } from '../../lib/supabase';
 import LoginModal from './components/LoginModal';
 import ClientDashboard from './components/ClientDashboard';
+import  FloatingNavbar from './components/FloatingNavbar';
+import './index.css';
 
+interface TemplateProps {
+  invitationId: string;
+  userConfig?: UserInvitationConfig | null;
+}
 
-function App() {
-  const initialConfig = useWeddingConfig();
-  const [weddingConfig, setWeddingConfig] = useState<WeddingConfig>(initialConfig);
+function App({ invitationId, userConfig }: TemplateProps) {
+  // Get default template configuration
+  const defaultConfig = useWeddingConfig();
   
+  // Merge default config with user custom config
+  const weddingConfig = useMergedConfig(defaultConfig, userConfig);
+  
+  const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
   const { isLoading, showInvitation, handleOpenInvitation } = useInvitation();
   const [mainVisible, setMainVisible] = useState(false);
@@ -39,6 +50,7 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
+  // Get guest name from URL parameter
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const guest = urlParams.get('to');
@@ -47,8 +59,19 @@ function App() {
     }
   }, []);
   
+  // Apply custom theme colors to CSS variables
+  useEffect(() => {
+    if (weddingConfig.theme) {
+      document.documentElement.style.setProperty('--color-primary', weddingConfig.theme.primary);
+      document.documentElement.style.setProperty('--color-secondary', weddingConfig.theme.secondary);
+      document.documentElement.style.setProperty('--color-accent', weddingConfig.theme.accent);
+    }
+  }, [weddingConfig.theme]);
+  
   useEffect(() => {
     const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+      
       const sections = ['hero', 'couple', 'story', 'event', 'gallery', 'donation', 'rsvp', 'prayer'];
       for (const section of sections) {
         const element = document.getElementById(section);
@@ -76,12 +99,11 @@ function App() {
     handleOpenInvitation();
     setIsModalOpen(false);
 
-    // Tampilkan dan picu pemutar musik segera setelah pengguna mengklik
-    // untuk memastikan browser mengizinkan audio untuk diputar.
+    // Show and trigger music player immediately after user clicks
     setShowMusicButton(true);
     setPlayMusicTrigger(true);
 
-    // Tunda visibilitas konten utama untuk animasi transisi yang mulus.
+    // Delay main content visibility for smooth transition animation
     setTimeout(() => {
       setMainVisible(true);
       document.body.style.overflow = 'auto';
@@ -111,8 +133,10 @@ function App() {
     }
   };
   
-  const handleSaveConfig = (newConfig: WeddingConfig) => {
-    setWeddingConfig(newConfig);
+  const handleSaveConfig = (newConfig: typeof weddingConfig) => {
+    // Note: This is for ClientDashboard (admin panel)
+    // User config is saved via InvitationConfigModal in UserPanel
+    console.log('Config saved from admin dashboard:', newConfig);
     setIsDashboardOpen(false);
   };
 
@@ -129,9 +153,8 @@ function App() {
       <div className={`transition-opacity duration-1000 ease-in ${mainVisible ? 'opacity-100' : 'opacity-0'}`}>
         <div className="min-h-screen bg-background text-text font-sans overflow-x-hidden relative">
           
+          {mainVisible && <FloralDecorations activeSection={activeSection} />}
           
-          
-          {/* Replace the old nav with FloatingNavbar */}
           <FloatingNavbar activeSection={activeSection} scrollToSection={scrollToSection} />
 
           <main>
@@ -142,10 +165,10 @@ function App() {
             <div id="event"><EventDetails config={weddingConfig} /></div>
             <div id="gallery"><Gallery config={weddingConfig} /></div>
             <div id="donation"><Donation config={weddingConfig} /></div>
-            <div id="rsvp"><RSVP /></div>
+            <div id="rsvp"><RSVP invitationId={invitationId} /></div>
             <div id="prayer"><PrayerDisplay /></div>
             <PrayerLetter config={weddingConfig} />
-            <GuestBook />
+            <GuestBook invitationId={invitationId} />
           </main>
 
           {showMusicButton && (
@@ -171,6 +194,19 @@ function App() {
                 <span>Watch Our Cinematic Story</span>
               </button>
               <p className="text-xs text-gray-400 mt-6">© 2025 {weddingConfig.couple.groom.name} & {weddingConfig.couple.bride.name} - All rights reserved</p>
+              
+              {/* Design & Promotion By WedTalku */}
+              <div className="mt-8 pt-6 border-t border-gray-700">
+                <a 
+                  href="https://wedtalku.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-2 text-gray-400 hover:text-rose-400 transition-colors duration-300 group"
+                >
+                  <Heart className="w-4 h-4 group-hover:fill-current" />
+                  <span className="text-sm">Design & Promotion by <span className="font-semibold">WedTalku</span></span>
+                </a>
+              </div>
             </div>
           </footer>
         </div>
