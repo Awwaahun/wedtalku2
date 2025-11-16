@@ -317,9 +317,9 @@ export const useWeddingConfig = (): WeddingConfig => {
     },
     
     theme: {
-      primary: '#f43f5e', // rose-500
-      secondary: '#f97316', // orange-500
-      accent: '#ec4899', // pink-500
+      primary: '#94a3b8', // slate-400
+      secondary: '#64748b', // slate-500
+      accent: '#e2e8f0', // slate-200
     },
     
     fonts: {
